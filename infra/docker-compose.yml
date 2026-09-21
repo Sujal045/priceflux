@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: priceflux-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-priceflux}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-priceflux}
+      POSTGRES_DB: ${POSTGRES_DB:-priceflux}
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - priceflux_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-priceflux} -d ${POSTGRES_DB:-priceflux}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: priceflux-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - priceflux_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: priceflux-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-priceflux}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-priceflux}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-priceflux}
+    ports:
+      - '${RABBITMQ_PORT:-5672}:5672'
+      - '${RABBITMQ_MANAGEMENT_PORT:-15672}:15672'
+    volumes:
+      - priceflux_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  priceflux_postgres_data:
+  priceflux_redis_data:
+  priceflux_rabbitmq_data:
