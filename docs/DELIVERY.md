@@ -18,8 +18,8 @@ Last updated: 2026-09-21
 |---|--------|--------|--------|-------|
 | 01 | Monorepo scaffold | `feat/01-monorepo-scaffold` | **done** | Merged to `main` |
 | 02 | Compose stack (Postgres/Redis/RabbitMQ) | `feat/02-compose-stack` | **done** | Merged via PR #1 |
-| 03 | RabbitMQ topology + assert script | `feat/03-rabbitmq-topology` | **in progress** | Code ready locally; user commits/PR |
-| 04 | `packages/shared` job/result contracts | `feat/04-shared-contracts` | pending | Zod schemas + tests |
+| 03 | RabbitMQ topology + assert script | `feat/03-rabbitmq-topology` | **done** | Merged via PR #2 |
+| 04 | `packages/shared` job/result contracts | `feat/04-shared-contracts` | **in progress** | Zod schemas + URL canonicalization + tests |
 | 05 | `packages/mq` client + confirms | `feat/05-mq-client` | pending | |
 | 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | pending | |
 | 07 | `packages/db` schema + migrations | `feat/07-db-schema` | pending | |
@@ -37,7 +37,7 @@ Last updated: 2026-09-21
 
 ## Next
 
-**Finish PR 03** → user commit/push/PR into `main` → then start **PR 04** (`packages/shared`).
+Finish **PR 04** → merge to `main` → then start **PR 05** (`packages/mq`).
 
 ## How to update this file
 
