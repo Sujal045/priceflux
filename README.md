@@ -23,13 +23,14 @@ packages/
   db/                  Postgres schema / migrations
   cache/               Redis helpers
   scrape-core/         Extraction (JSON-LD, etc.)
-infra/                 Compose, RabbitMQ definitions (from PR 02+)
+infra/                 Docker Compose (Postgres, Redis, RabbitMQ)
 ```
 
 ## Prerequisites
 
 - Node.js ≥ 20
 - pnpm 9 (`packageManager` field enforced via Corepack/pnpm)
+- Docker + Docker Compose (for local infra)
 
 ## Commands
 
@@ -40,6 +41,16 @@ pnpm typecheck
 pnpm lint
 ```
 
+## Local infrastructure
+
+```bash
+cp .env.example .env
+docker compose -f infra/docker-compose.yml --env-file .env up -d
+docker compose -f infra/docker-compose.yml ps
+```
+
+See [infra/README.md](infra/README.md) for ports and teardown. RabbitMQ topology (exchanges/queues) lands in a later PR.
+
 ## Delivery
 
-Incremental PRs — see the architecture/delivery plan. This commit is **PR 01** (scaffold only). No business logic, Docker, or RabbitMQ topology yet.
+Incremental PRs into `main`. Current focus: local Compose stack only — no app business logic yet.
