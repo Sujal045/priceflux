@@ -1,0 +1,148 @@
+{
+  "exchanges": [
+    {
+      "name": "scrape.work",
+      "vhost": "priceflux",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "scrape.dlx",
+      "vhost": "priceflux",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "results.topic",
+      "vhost": "priceflux",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "scrape.jobs",
+      "vhost": "priceflux",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "scrape.dlx",
+        "x-dead-letter-routing-key": "scrape.fail"
+      }
+    },
+    {
+      "name": "scrape.retry.30s",
+      "vhost": "priceflux",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 30000,
+        "x-dead-letter-exchange": "scrape.work",
+        "x-dead-letter-routing-key": "scrape.job"
+      }
+    },
+    {
+      "name": "scrape.retry.5m",
+      "vhost": "priceflux",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 300000,
+        "x-dead-letter-exchange": "scrape.work",
+        "x-dead-letter-routing-key": "scrape.job"
+      }
+    },
+    {
+      "name": "scrape.retry.30m",
+      "vhost": "priceflux",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1800000,
+        "x-dead-letter-exchange": "scrape.work",
+        "x-dead-letter-routing-key": "scrape.job"
+      }
+    },
+    {
+      "name": "scrape.dead",
+      "vhost": "priceflux",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "results.notify",
+      "vhost": "priceflux",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "scrape.work",
+      "vhost": "priceflux",
+      "destination": "scrape.jobs",
+      "destination_type": "queue",
+      "routing_key": "scrape.job",
+      "arguments": {}
+    },
+    {
+      "source": "scrape.dlx",
+      "vhost": "priceflux",
+      "destination": "scrape.retry.30s",
+      "destination_type": "queue",
+      "routing_key": "scrape.retry.30s",
+      "arguments": {}
+    },
+    {
+      "source": "scrape.dlx",
+      "vhost": "priceflux",
+      "destination": "scrape.retry.5m",
+      "destination_type": "queue",
+      "routing_key": "scrape.retry.5m",
+      "arguments": {}
+    },
+    {
+      "source": "scrape.dlx",
+      "vhost": "priceflux",
+      "destination": "scrape.retry.30m",
+      "destination_type": "queue",
+      "routing_key": "scrape.retry.30m",
+      "arguments": {}
+    },
+    {
+      "source": "scrape.dlx",
+      "vhost": "priceflux",
+      "destination": "scrape.dead",
+      "destination_type": "queue",
+      "routing_key": "scrape.dead",
+      "arguments": {}
+    },
+    {
+      "source": "scrape.dlx",
+      "vhost": "priceflux",
+      "destination": "scrape.dead",
+      "destination_type": "queue",
+      "routing_key": "scrape.fail",
+      "arguments": {}
+    },
+    {
+      "source": "results.topic",
+      "vhost": "priceflux",
+      "destination": "results.notify",
+      "destination_type": "queue",
+      "routing_key": "results.ready",
+      "arguments": {}
+    }
+  ]
+}

@@ -47,10 +47,11 @@ pnpm lint
 cp .env.example .env
 docker compose -f infra/docker-compose.yml --env-file .env up -d
 docker compose -f infra/docker-compose.yml ps
+pnpm topology:assert
 ```
 
-See [infra/README.md](infra/README.md) for ports and teardown. RabbitMQ topology (exchanges/queues) lands in a later PR.
+See [infra/README.md](infra/README.md) for ports, topology, and teardown.
 
 ## Delivery
 
-Incremental PRs into `main`. Current focus: local Compose stack only — no app business logic yet.
+Incremental PRs into `main`. Track progress in [docs/DELIVERY.md](docs/DELIVERY.md). Cursor project rules in `.cursor/rules/` encode the workflow for every chat.

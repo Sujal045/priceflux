@@ -1,0 +1,30 @@
+---
+description: Priceflux delivery workflow, git rules, and progress source of truth
+alwaysApply: true
+---
+
+# Priceflux agent workflow
+
+## Before any work
+
+1. Read `docs/DELIVERY.md` for completed PRs, current branch, and next stage.
+2. Work only on the stage listed as **Next** (or the in-progress branch named there).
+3. After finishing a stage’s code, update `docs/DELIVERY.md` status before handing off.
+
+## Git (hard rules)
+
+- **Never** create commits, amend, or push unless the user explicitly asks in that message.
+- Prefer giving a ready **commit message** + commands; the user commits with their personal git account.
+- Land code on **`main` only via Pull Request** — no direct pushes of feature work to `main`.
+- Branch naming: `feat/NN-short-slug` matching the delivery stage number.
+
+## Product constraints
+
+- Stack: TypeScript monorepo (pnpm/Turborepo), **Fastify** API, RabbitMQ, Postgres, Redis, Playwright workers.
+- **No web UI in v1** (UI is v2).
+- One concern per PR; keep diffs reviewable. Tests belong in the same PR as the behavior they cover.
+- Do not mix topology, schema migrations, and anti-bot work in one PR.
+
+## Handoff
+
+When a stage is ready: summarize files changed, verification run, commit message, and PR base `main`. Do not start the next stage until the user asks (usually after merge).
