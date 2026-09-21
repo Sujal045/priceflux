@@ -1,0 +1,28 @@
+{
+  "name": "priceflux",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Distributed web scraper and price tracking engine",
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
+  }
+}

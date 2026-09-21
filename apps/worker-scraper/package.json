@@ -1,0 +1,21 @@
+{
+  "name": "@priceflux/worker-scraper",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
+    "test": "node -e \"console.log('no tests yet')\"",
+    "dev": "node --watch --import tsx src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@priceflux/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
