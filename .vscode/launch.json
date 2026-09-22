@@ -155,6 +155,59 @@
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
+      "name": "Test: @priceflux/db",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": [
+        "${workspaceFolder}/packages/db/src/config.test.ts",
+        "${workspaceFolder}/packages/db/src/schema.test.ts"
+      ],
+      "cwd": "${workspaceFolder}/packages/db",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Test: @priceflux/db (integration)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": [
+        "${workspaceFolder}/packages/db/src/config.test.ts",
+        "${workspaceFolder}/packages/db/src/schema.test.ts"
+      ],
+      "cwd": "${workspaceFolder}/packages/db",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "PRICEFLUX_DB_INTEGRATION": "1"
+      },
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "DB: migrate",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "args": ["${workspaceFolder}/packages/db/src/migrate-cli.ts"],
+      "cwd": "${workspaceFolder}/packages/db",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
       "name": "Debug current test file",
       "type": "node",
       "request": "launch",

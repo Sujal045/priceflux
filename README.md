@@ -48,6 +48,7 @@ cp .env.example .env
 docker compose -f infra/docker-compose.yml --env-file .env up -d
 docker compose -f infra/docker-compose.yml ps
 pnpm topology:assert
+pnpm db:migrate
 ```
 
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.
@@ -60,8 +61,9 @@ Use **Run and Debug** (`F5`) with the configs in `.vscode/launch.json`:
 |--------|-----|
 | Debug current TS file | Open any `.ts` file, then start |
 | API / Worker:* | Run app entrypoints under the debugger |
-| Test: @priceflux/shared \| mq \| cache | Breakpoints in package tests |
-| Test: @priceflux/mq \| cache (integration) | Needs Compose (Redis/RabbitMQ) |
+| Test: @priceflux/shared \| mq \| cache \| db | Breakpoints in package tests |
+| Test: * (integration) | Needs Compose services up |
+| DB: migrate | Run Drizzle migrations under the debugger |
 | Script: topology assert | Debug the topology apply/assert script |
 | Attach to Node process | Process started with `--inspect=9229` |
 
