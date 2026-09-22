@@ -27,4 +27,9 @@ alwaysApply: true
 
 ## Handoff
 
-When a stage is ready: summarize files changed, verification run, commit message, and PR base `main`. Do not start the next stage until the user asks (usually after merge).
+When a stage is ready, always provide:
+1. Short summary of what changed + how it was verified
+2. **Commit message** + `git add` / commit commands (user commits)
+3. **PR title + PR body** (and optional `gh pr create` command) targeting `main`
+
+Do not start the next stage until the user asks (usually after merge).

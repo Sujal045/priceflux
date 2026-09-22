@@ -1,0 +1,190 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug current TS file",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "args": ["${file}"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "API: apps/api",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "args": ["${workspaceFolder}/apps/api/src/index.ts"],
+      "cwd": "${workspaceFolder}/apps/api",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Worker: scraper",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "args": ["${workspaceFolder}/apps/worker-scraper/src/index.ts"],
+      "cwd": "${workspaceFolder}/apps/worker-scraper",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Worker: notifier",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "args": ["${workspaceFolder}/apps/worker-notifier/src/index.ts"],
+      "cwd": "${workspaceFolder}/apps/worker-notifier",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Script: topology assert",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "args": ["${workspaceFolder}/scripts/assert-topology.ts"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Test: @priceflux/shared",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": [
+        "${workspaceFolder}/packages/shared/src/url.test.ts",
+        "${workspaceFolder}/packages/shared/src/schemas.test.ts"
+      ],
+      "cwd": "${workspaceFolder}/packages/shared",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Test: @priceflux/mq",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": ["${workspaceFolder}/packages/mq/src/publish.test.ts"],
+      "cwd": "${workspaceFolder}/packages/mq",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Test: @priceflux/mq (integration)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": ["${workspaceFolder}/packages/mq/src/publish.test.ts"],
+      "cwd": "${workspaceFolder}/packages/mq",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "PRICEFLUX_MQ_INTEGRATION": "1"
+      },
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Test: @priceflux/cache",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": [
+        "${workspaceFolder}/packages/cache/src/config.test.ts",
+        "${workspaceFolder}/packages/cache/src/dedupe.test.ts"
+      ],
+      "cwd": "${workspaceFolder}/packages/cache",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Test: @priceflux/cache (integration)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": [
+        "${workspaceFolder}/packages/cache/src/config.test.ts",
+        "${workspaceFolder}/packages/cache/src/dedupe.test.ts"
+      ],
+      "cwd": "${workspaceFolder}/packages/cache",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "PRICEFLUX_CACHE_INTEGRATION": "1"
+      },
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Debug current test file",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1"
+      ],
+      "args": ["${file}"],
+      "cwd": "${fileDirname}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": false,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Attach to Node process",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "API + scraper worker",
+      "configurations": ["API: apps/api", "Worker: scraper"],
+      "stopAll": true
+    }
+  ]
+}

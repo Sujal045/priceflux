@@ -52,6 +52,21 @@ pnpm topology:assert
 
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.
 
+## Debugging (VS Code / Cursor)
+
+Use **Run and Debug** (`F5`) with the configs in `.vscode/launch.json`:
+
+| Config | Use |
+|--------|-----|
+| Debug current TS file | Open any `.ts` file, then start |
+| API / Worker:* | Run app entrypoints under the debugger |
+| Test: @priceflux/shared \| mq \| cache | Breakpoints in package tests |
+| Test: @priceflux/mq \| cache (integration) | Needs Compose (Redis/RabbitMQ) |
+| Script: topology assert | Debug the topology apply/assert script |
+| Attach to Node process | Process started with `--inspect=9229` |
+
+Workspace setting `debug.javascript.autoAttachFilter` is **`onlyWithFlag`** (not `smart`/`always`). That avoids a known js-debug bootloader clash with `node --test` (`Environment was initialized without a V8::Inspector`). For terminal auto-attach, start Node with `--inspect` yourself.
+
 ## Delivery
 
 Incremental PRs into `main`. Track progress in [docs/DELIVERY.md](docs/DELIVERY.md). Cursor project rules in `.cursor/rules/` encode the workflow for every chat.
