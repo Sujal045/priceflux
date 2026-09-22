@@ -22,8 +22,8 @@ Last updated: 2026-09-22
 | 03 | RabbitMQ topology + assert script | `feat/03-rabbitmq-topology` | **done** | Merged via PR #2 |
 | 04 | `packages/shared` job/result contracts | `feat/04-shared-contracts` | **done** | Merged via PR #3 |
 | 05 | `packages/mq` client + confirms | `feat/05-mq-client` | **done** | Merged via PR #4 |
-| 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | **in progress** | SET NX EX 300 + domain rate-limit stub + VS Code debugger |
-| 07 | `packages/db` schema + migrations | `feat/07-db-schema` | pending | |
+| 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | **done** | Merged via PR #5 |
+| 07 | `packages/db` schema + migrations | `feat/07-db-schema` | **in progress** | Drizzle: users, watches, price_history |
 | 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | pending | |
 | 09 | Watches API + enqueue | `feat/09-watches-enqueue` | pending | |
 | 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | pending | |
@@ -38,7 +38,7 @@ Last updated: 2026-09-22
 
 ## Next
 
-Finish **PR 06** → merge to `main` → then start **PR 07** (`packages/db`).
+Finish **PR 07** → merge to `main` → then start **PR 08** (Fastify API skeleton).
 
 ## How to update this file
 

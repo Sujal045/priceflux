@@ -11,20 +11,25 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist", "drizzle"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
-    "test": "node -e \"console.log('no tests yet')\"",
+    "test": "tsx --test src/**/*.test.ts",
+    "test:integration": "PRICEFLUX_DB_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/**/*.test.ts",
+    "db:migrate": "tsx --env-file=../../.env src/migrate-cli.ts",
+    "db:generate": "drizzle-kit generate",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@priceflux/shared": "workspace:*"
+    "@priceflux/shared": "workspace:*",
+    "drizzle-orm": "^0.40.0",
+    "postgres": "^3.4.5"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.30.5",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
 }
