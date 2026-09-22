@@ -3,7 +3,7 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 
 ## Workflow
 
@@ -11,6 +11,7 @@ Last updated: 2026-09-21
 - Merge path: feature branch → PR → `main` only
 - Agent does **not** commit/push unless the user explicitly asks
 - User commits with personal GitHub account (`Sujal045/priceflux`)
+- After each stage, handoff includes **commit message** and **PR title/body**
 
 ## Stages
 
@@ -19,9 +20,9 @@ Last updated: 2026-09-21
 | 01 | Monorepo scaffold | `feat/01-monorepo-scaffold` | **done** | Merged to `main` |
 | 02 | Compose stack (Postgres/Redis/RabbitMQ) | `feat/02-compose-stack` | **done** | Merged via PR #1 |
 | 03 | RabbitMQ topology + assert script | `feat/03-rabbitmq-topology` | **done** | Merged via PR #2 |
-| 04 | `packages/shared` job/result contracts | `feat/04-shared-contracts` | **in progress** | Zod schemas + URL canonicalization + tests |
-| 05 | `packages/mq` client + confirms | `feat/05-mq-client` | pending | |
-| 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | pending | |
+| 04 | `packages/shared` job/result contracts | `feat/04-shared-contracts` | **done** | Merged via PR #3 |
+| 05 | `packages/mq` client + confirms | `feat/05-mq-client` | **done** | Merged via PR #4 |
+| 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | **in progress** | SET NX EX 300 + domain rate-limit stub + VS Code debugger |
 | 07 | `packages/db` schema + migrations | `feat/07-db-schema` | pending | |
 | 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | pending | |
 | 09 | Watches API + enqueue | `feat/09-watches-enqueue` | pending | |
@@ -37,7 +38,7 @@ Last updated: 2026-09-21
 
 ## Next
 
-Finish **PR 04** → merge to `main` → then start **PR 05** (`packages/mq`).
+Finish **PR 06** → merge to `main` → then start **PR 07** (`packages/db`).
 
 ## How to update this file
 

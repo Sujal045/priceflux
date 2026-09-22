@@ -11,20 +11,21 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
-    "test": "node -e \"console.log('no tests yet')\"",
+    "test": "tsx --test src/**/*.test.ts",
+    "test:integration": "PRICEFLUX_CACHE_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/**/*.test.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@priceflux/shared": "workspace:*"
+    "@priceflux/shared": "workspace:*",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
+    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
 }
