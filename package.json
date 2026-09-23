@@ -16,6 +16,7 @@
     "test": "turbo run test",
     "topology:assert": "node --env-file=.env --import tsx scripts/assert-topology.ts",
     "db:migrate": "pnpm --filter @priceflux/db db:migrate",
+    "dev:api": "pnpm --filter @priceflux/api dev",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

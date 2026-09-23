@@ -23,8 +23,8 @@ Last updated: 2026-09-22
 | 04 | `packages/shared` job/result contracts | `feat/04-shared-contracts` | **done** | Merged via PR #3 |
 | 05 | `packages/mq` client + confirms | `feat/05-mq-client` | **done** | Merged via PR #4 |
 | 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | **done** | Merged via PR #5 |
-| 07 | `packages/db` schema + migrations | `feat/07-db-schema` | **in progress** | Drizzle: users, watches, price_history |
-| 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | pending | |
+| 07 | `packages/db` schema + migrations | `feat/07-db-schema` | **done** | Merged via PR #6 |
+| 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | **in progress** | Boot, config, health only |
 | 09 | Watches API + enqueue | `feat/09-watches-enqueue` | pending | |
 | 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | pending | |
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | pending | Fixtures + unit tests |
@@ -38,7 +38,7 @@ Last updated: 2026-09-22
 
 ## Next
 
-Finish **PR 07** → merge to `main` → then start **PR 08** (Fastify API skeleton).
+Finish **PR 08** → merge to `main` → then start **PR 09** (watches API + enqueue).
 
 ## How to update this file
 
