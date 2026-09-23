@@ -51,6 +51,14 @@ pnpm topology:assert
 pnpm db:migrate
 ```
 
+### API (local)
+
+```bash
+pnpm dev:api
+# then:
+curl -s http://127.0.0.1:3000/healthz
+```
+
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.
 
 ## Debugging (VS Code / Cursor)
