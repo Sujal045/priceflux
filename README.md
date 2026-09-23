@@ -54,9 +54,13 @@ pnpm db:migrate
 ### API (local)
 
 ```bash
+pnpm topology:assert
+pnpm db:migrate
 pnpm dev:api
-# then:
 curl -s http://127.0.0.1:3000/healthz
+curl -s -X POST http://127.0.0.1:3000/watches \
+  -H 'content-type: application/json' \
+  -d '{"email":"you@example.com","url":"https://shop.example/p/1","threshold":20,"currency":"USD"}'
 ```
 
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.

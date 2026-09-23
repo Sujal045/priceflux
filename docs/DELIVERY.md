@@ -3,7 +3,7 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 ## Workflow
 
@@ -24,8 +24,8 @@ Last updated: 2026-09-22
 | 05 | `packages/mq` client + confirms | `feat/05-mq-client` | **done** | Merged via PR #4 |
 | 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | **done** | Merged via PR #5 |
 | 07 | `packages/db` schema + migrations | `feat/07-db-schema` | **done** | Merged via PR #6 |
-| 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | **in progress** | Boot, config, health only |
-| 09 | Watches API + enqueue | `feat/09-watches-enqueue` | pending | |
+| 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | **done** | Merged via PR #7 |
+| 09 | Watches API + enqueue | `feat/09-watches-enqueue` | **in progress** | CRUD + Redis dedupe + scrape.job |
 | 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | pending | |
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | pending | Fixtures + unit tests |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | pending | |
@@ -38,7 +38,7 @@ Last updated: 2026-09-22
 
 ## Next
 
-Finish **PR 08** → merge to `main` → then start **PR 09** (watches API + enqueue).
+Finish **PR 09** → merge to `main` → then start **PR 10** (scraper worker skeleton).
 
 ## How to update this file
 

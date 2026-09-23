@@ -39,6 +39,7 @@ describe('GET /healthz', () => {
     app = await buildApp({
       config: loadApiConfig({ NODE_ENV: 'test', LOG_LEVEL: 'silent' }),
       logger: false,
+      withInfra: false,
     });
   });
 

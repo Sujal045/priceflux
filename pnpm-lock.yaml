@@ -35,12 +35,30 @@ importers:
 
   apps/api:
     dependencies:
+      '@priceflux/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
+      '@priceflux/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@priceflux/mq':
+        specifier: workspace:*
+        version: link:../../packages/mq
       '@priceflux/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      drizzle-orm:
+        specifier: ^0.40.0
+        version: 0.40.1(gel@2.2.1)(postgres@3.4.9)
       fastify:
         specifier: ^5.2.1
         version: 5.12.5
+      fastify-plugin:
+        specifier: ^5.0.1
+        version: 5.1.0
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
     devDependencies:
       tsx:
         specifier: ^4.19.3
@@ -1108,6 +1126,9 @@ packages:
 
   fast-uri@4.2.1:
     resolution: {integrity: sha512-TmHQgewjHtMq1E5QKA0tOE0yeYGQs25KZC/ziJpubRtWI15W92e6vPFydWOeZBVROSHBYw/QhD9d5OefdD6LDg==}
+
+  fastify-plugin@5.1.0:
+    resolution: {integrity: sha512-FAIDA8eovSt5qcDgcBvDuX/v0Cjz0ohGhENZ/wpc3y+oZCY2afZ9Baqql3g/lC+OHRnciQol4ww7tuthOb9idw==}
 
   fastify@5.12.5:
     resolution: {integrity: sha512-OB2k1dlxs5/NAABqeKV2FUHkSD2BbENsCak8yULVcymn3fHIPDVa9TI3SDnJSWYSllZmSYuZXy2gTnsT+Sut1A==}
@@ -2246,6 +2267,8 @@ snapshots:
   fast-uri@3.1.8: {}
 
   fast-uri@4.2.1: {}
+
+  fastify-plugin@5.1.0: {}
 
   fastify@5.12.5:
     dependencies:
