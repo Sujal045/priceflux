@@ -7,16 +7,11 @@ Last updated: 2026-09-25
 
 ## Current WIP (read this first in a new chat)
 
-| Field | Value |
-|-------|--------|
-| Branch | `feat/11-jsonld-extractor` |
-| Stage | **11** — `scrape-core` JSON-LD extractor |
-| Code status | **Implemented locally; not committed / not pushed / no PR yet** |
-| Scope | `packages/scrape-core` (+ docs). No Playwright. |
-| Verify | `pnpm --filter @priceflux/scrape-core test` |
-| After merge | Start stage **12** only when the user asks |
+**Stage 12** on branch `feat/12-scrape-happy-path` — Playwright happy path → scrape-core extract → publish `results.ready`.
 
-If `git status` shows a clean tree on `main` with stage 11 marked done, ignore this WIP block and follow **Next** below.
+Code is ready for user commit + PR (not pushed). Continuity files folded into this branch:
+- `AGENTS.md`
+- `.cursor/rules/priceflux-workflow.mdc`
 
 ## Workflow
 
@@ -40,8 +35,8 @@ If `git status` shows a clean tree on `main` with stage 11 marked done, ignore t
 | 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | **done** | Merged via PR #7 |
 | 09 | Watches API + enqueue | `feat/09-watches-enqueue` | **done** | Merged via PR #8 |
 | 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | **done** | Merged via PR #9 |
-| 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **in progress** | Fixtures + unit tests |
-| 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | pending | |
+| 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **done** | Merged via PR #10 |
+| 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **in progress** | Awaiting commit/PR |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | pending | |
 | 14 | Notifier + price history | `feat/14-notifier` | pending | |
 | 15 | Observability baseline | `feat/15-observability` | pending | |
@@ -51,7 +46,7 @@ If `git status` shows a clean tree on `main` with stage 11 marked done, ignore t
 
 ## Next
 
-Finish **PR 11** (`feat/11-jsonld-extractor`) → merge to `main` → then start **PR 12** (Playwright happy path).
+After **PR 12** merges: start **PR 13** (`feat/13-dlx-retries`) — error classes, attempt headers, retry tiers, dead letter. Do not start until the user asks.
 
 ## How to update this file
 

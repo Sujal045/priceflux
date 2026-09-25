@@ -1,6 +1,8 @@
 export type ScraperWorkerConfig = {
   prefetch: number;
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
+  headless: boolean;
+  navigationTimeoutMs: number;
 };
 
 const LOG_LEVELS = new Set([
@@ -12,6 +14,17 @@ const LOG_LEVELS = new Set([
   'trace',
   'silent',
 ]);
+
+function parseBoolean(raw: string, envName: string): boolean {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === '1' || normalized === 'true' || normalized === 'yes') {
+    return true;
+  }
+  if (normalized === '0' || normalized === 'false' || normalized === 'no') {
+    return false;
+  }
+  throw new Error(`Invalid ${envName}: ${raw}`);
+}
 
 export function loadScraperWorkerConfig(
   env: NodeJS.ProcessEnv = process.env,
@@ -27,8 +40,26 @@ export function loadScraperWorkerConfig(
     throw new Error(`Invalid LOG_LEVEL: ${env.LOG_LEVEL}`);
   }
 
+  const headless = parseBoolean(
+    env.WORKER_SCRAPER_HEADLESS ?? 'true',
+    'WORKER_SCRAPER_HEADLESS',
+  );
+
+  const timeoutRaw = env.WORKER_SCRAPER_NAVIGATION_TIMEOUT_MS ?? '30000';
+  const navigationTimeoutMs = Number(timeoutRaw);
+  if (
+    !Number.isInteger(navigationTimeoutMs) ||
+    navigationTimeoutMs <= 0
+  ) {
+    throw new Error(
+      `Invalid WORKER_SCRAPER_NAVIGATION_TIMEOUT_MS: ${timeoutRaw}`,
+    );
+  }
+
   return {
     prefetch,
     logLevel: logLevelRaw as ScraperWorkerConfig['logLevel'],
+    headless,
+    navigationTimeoutMs,
   };
 }
