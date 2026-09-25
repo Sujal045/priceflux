@@ -19,6 +19,7 @@
     "db:migrate": "pnpm --filter @priceflux/db db:migrate",
     "dev:api": "pnpm --filter @priceflux/api dev",
     "dev:worker-scraper": "pnpm --filter @priceflux/worker-scraper dev",
+    "dev:worker-notifier": "pnpm --filter @priceflux/worker-notifier dev",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
