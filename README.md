@@ -2,9 +2,9 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–12** are on `main`. Stage **13** (this branch / upcoming PR) adds DLX retries + dead letter. **Drop alerts and price history writes are not available yet** (stage 14).
+**How far are we?** Stages **01–13** are on `main`. Stage **14** (this branch / upcoming PR) adds the notifier: `price_history` + threshold alerts. **Amazon-class sites still need anti-bot (stage 16).**
 
-**Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup, API examples, and what you can / cannot test today.
+**Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup and what you can realistically test.
 
 ## Stack
 
@@ -67,14 +67,15 @@ curl -s -X POST http://127.0.0.1:3000/watches \
   -d '{"email":"you@example.com","url":"https://shop.example/p/1","threshold":20,"currency":"USD"}'
 ```
 
-### Scraper worker
+### Scraper + notifier workers
 
 ```bash
 pnpm --filter @priceflux/worker-scraper playwright:install
 pnpm topology:assert
-pnpm dev:worker-scraper
-# In another terminal, POST /watches (or publish a scrape job).
-# On success the worker publishes results.ready (see results.notify in RabbitMQ UI).
+pnpm db:migrate
+pnpm dev:worker-scraper    # terminal B
+pnpm dev:worker-notifier   # terminal C
+# POST /watches → scrape → price_history (+ alert if price <= threshold)
 ```
 
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.

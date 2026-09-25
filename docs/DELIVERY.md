@@ -7,7 +7,7 @@ Last updated: 2026-09-25
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 13** on branch `feat/13-dlx-retries` — error classification, `x-attempt` headers, retry tiers, `scrape.dead`, replay script.
+**Stage 14** on branch `feat/14-notifier` — consume `results.ready`, write `price_history`, threshold alerts (log + optional webhook stub).
 
 Code is ready for user commit + PR (not pushed).
 
@@ -35,8 +35,8 @@ Code is ready for user commit + PR (not pushed).
 | 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | **done** | Merged via PR #9 |
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **done** | Merged via PR #10 |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **done** | Merged via PR #11 |
-| 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **in progress** | Awaiting commit/PR |
-| 14 | Notifier + price history | `feat/14-notifier` | pending | |
+| 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
+| 14 | Notifier + price history | `feat/14-notifier` | **in progress** | Awaiting commit/PR |
 | 15 | Observability baseline | `feat/15-observability` | pending | |
 | 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | pending | |
 | 17 | Prod hardening docs | `feat/17-prod-docs` | pending | |
@@ -44,7 +44,7 @@ Code is ready for user commit + PR (not pushed).
 
 ## Next
 
-After **PR 13** merges: start **PR 14** (`feat/14-notifier`) — consume `results.ready`, write `price_history`, threshold alerts. Do not start until the user asks.
+After **PR 14** merges: start **PR 15** (`feat/15-observability`) when the user asks.
 
 ## How to update this file
 
