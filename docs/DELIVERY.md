@@ -3,7 +3,20 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-09-23
+Last updated: 2026-09-25
+
+## Current WIP (read this first in a new chat)
+
+| Field | Value |
+|-------|--------|
+| Branch | `feat/11-jsonld-extractor` |
+| Stage | **11** — `scrape-core` JSON-LD extractor |
+| Code status | **Implemented locally; not committed / not pushed / no PR yet** |
+| Scope | `packages/scrape-core` (+ docs). No Playwright. |
+| Verify | `pnpm --filter @priceflux/scrape-core test` |
+| After merge | Start stage **12** only when the user asks |
+
+If `git status` shows a clean tree on `main` with stage 11 marked done, ignore this WIP block and follow **Next** below.
 
 ## Workflow
 
@@ -26,8 +39,8 @@ Last updated: 2026-09-23
 | 07 | `packages/db` schema + migrations | `feat/07-db-schema` | **done** | Merged via PR #6 |
 | 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | **done** | Merged via PR #7 |
 | 09 | Watches API + enqueue | `feat/09-watches-enqueue` | **done** | Merged via PR #8 |
-| 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | **in progress** | Consume + ack (no Playwright yet) |
-| 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | pending | Fixtures + unit tests |
+| 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | **done** | Merged via PR #9 |
+| 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **in progress** | Fixtures + unit tests |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | pending | |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | pending | |
 | 14 | Notifier + price history | `feat/14-notifier` | pending | |
@@ -38,9 +51,10 @@ Last updated: 2026-09-23
 
 ## Next
 
-Finish **PR 10** → merge to `main` → then start **PR 11** (`scrape-core` JSON-LD).
+Finish **PR 11** (`feat/11-jsonld-extractor`) → merge to `main` → then start **PR 12** (Playwright happy path).
 
 ## How to update this file
 
-When a stage merges to `main`: set its status to `done`, clear “in progress”, set **Next** to the following stage number.  
-When starting a stage: set status to `in progress` and record the branch name.
+When a stage merges to `main`: set its status to `done`, clear “in progress”, clear or rewrite **Current WIP**, set **Next** to the following stage number.  
+When starting a stage: set status to `in progress`, record the branch name, and fill **Current WIP** (including whether code is still uncommitted).  
+When stage code is finished but awaiting user commit/PR: keep status `in progress` and note that in **Current WIP**.
