@@ -7,6 +7,8 @@ export {
   publishJson,
   publishScrapeJob,
   publishScrapeResult,
+  publishScrapeFailure,
   type PublishJsonInput,
   type PublishScrapeJobInput,
+  type PublishScrapeFailureInput,
 } from './publish.js';

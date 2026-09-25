@@ -121,6 +121,38 @@ export function publishScrapeResult(
   });
 }
 
+export type PublishScrapeFailureInput = {
+  job: unknown;
+  /** DLX routing key: scrape.retry.* or scrape.dead */
+  routingKey: string;
+  headers: Record<string, string | number | boolean | undefined>;
+};
+
+/**
+ * Publish a failed scrape job to scrape.dlx (retry TTL queue or dead letter)
+ * with publisher confirms.
+ */
+export function publishScrapeFailure(
+  channel: ConfirmChannel,
+  input: PublishScrapeFailureInput,
+): Promise<Replies.Empty> {
+  const headers: Options.Publish['headers'] = {};
+  for (const [key, value] of Object.entries(input.headers)) {
+    if (value !== undefined) {
+      headers[key] = value;
+    }
+  }
+
+  const messageId = readJobId(input.job);
+  return publishJson(channel, {
+    exchange: Exchanges.scrapeDlx,
+    routingKey: input.routingKey,
+    payload: input.job,
+    headers,
+    ...(messageId !== undefined ? { messageId } : {}),
+  });
+}
+
 function readJobId(value: unknown): string | undefined {
   if (
     typeof value === 'object' &&

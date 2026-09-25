@@ -7,11 +7,9 @@ Last updated: 2026-09-25
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 12** on branch `feat/12-scrape-happy-path` — Playwright happy path → scrape-core extract → publish `results.ready`.
+**Stage 13** on branch `feat/13-dlx-retries` — error classification, `x-attempt` headers, retry tiers, `scrape.dead`, replay script.
 
-Code is ready for user commit + PR (not pushed). Continuity files folded into this branch:
-- `AGENTS.md`
-- `.cursor/rules/priceflux-workflow.mdc`
+Code is ready for user commit + PR (not pushed).
 
 ## Workflow
 
@@ -36,8 +34,8 @@ Code is ready for user commit + PR (not pushed). Continuity files folded into th
 | 09 | Watches API + enqueue | `feat/09-watches-enqueue` | **done** | Merged via PR #8 |
 | 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | **done** | Merged via PR #9 |
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **done** | Merged via PR #10 |
-| 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **in progress** | Awaiting commit/PR |
-| 13 | DLX retries + dead letter | `feat/13-dlx-retries` | pending | |
+| 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **done** | Merged via PR #11 |
+| 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **in progress** | Awaiting commit/PR |
 | 14 | Notifier + price history | `feat/14-notifier` | pending | |
 | 15 | Observability baseline | `feat/15-observability` | pending | |
 | 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | pending | |
@@ -46,7 +44,7 @@ Code is ready for user commit + PR (not pushed). Continuity files folded into th
 
 ## Next
 
-After **PR 12** merges: start **PR 13** (`feat/13-dlx-retries`) — error classes, attempt headers, retry tiers, dead letter. Do not start until the user asks.
+After **PR 13** merges: start **PR 14** (`feat/14-notifier`) — consume `results.ready`, write `price_history`, threshold alerts. Do not start until the user asks.
 
 ## How to update this file
 

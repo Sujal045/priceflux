@@ -1,13 +1,13 @@
-# Priceflux usage guide (through stage 12)
+# Priceflux usage guide (through stage 13)
 
-This document describes **what works today** after stages **01–12**, and how to run/test it locally.
+This document describes **what works today** after stages **01–13**, and how to run/test it locally.
 
-> **Short answer:** You can submit a product URL via the API, persist a watch, enqueue a scrape job, and have the worker **fetch the page with Playwright**, extract a JSON-LD price, and publish `results.ready`.  
-> You **cannot** yet retry failed scrapes, write price history, or send drop alerts. That is stages **13–14**.
+> **Short answer:** You can submit a product URL via the API, have the worker scrape JSON-LD prices, and publish `results.ready`. Failed scrapes are **classified**, retried on TTL queues (`30s` → `5m` → `30m`), then parked on `scrape.dead`.  
+> You **cannot** yet write price history or send drop alerts. That is stage **14**.
 
 ---
 
-## What is completed (01–12)
+## What is completed (01–13)
 
 | Stage | Capability |
 |-------|------------|
@@ -23,16 +23,16 @@ This document describes **what works today** after stages **01–12**, and how t
 | 10 | Scraper worker consumes `scrape.jobs` with manual ack |
 | 11 | `@priceflux/scrape-core` JSON-LD Product/Offer extractor |
 | 12 | Playwright fetch → extract → publish `results.ready` |
+| 13 | Error classes, attempt headers, DLX retry tiers, dead-letter replay |
 
 ### What is **not** done yet
 
 | Later stage | Missing capability |
 |-------------|-------------------|
-| 13 | Retry / DLX worker behavior for scrape failures |
 | 14 | Write `price_history`, compare threshold, send alerts |
 | — | Web UI (v2) |
 
-So: **giving a URL to the API can scrape and publish a price result**, but nothing yet stores history or alerts you.
+So: **scrape successes land on `results.notify`; failures retry then park on `scrape.dead`.** Nothing yet stores history or alerts you.
 
 ---
 
@@ -74,9 +74,6 @@ All three services should be **healthy**:
 pnpm topology:assert
 pnpm db:migrate
 ```
-
-- `topology:assert` — creates/verifies exchanges & queues from `infra/rabbitmq/definitions.json`
-- `db:migrate` — creates `users`, `watches`, `price_history`
 
 ---
 
@@ -140,80 +137,63 @@ What happens:
 2. User row is created/found by email
 3. Watch is inserted/updated in Postgres
 4. Redis tries to claim `dedupeKey` for **5 minutes**
-5. If claimed → publish `scrape.job` to RabbitMQ → worker fetches with Playwright, extracts JSON-LD, publishes `results.ready`
-6. If not claimed (same URL within 5 minutes) → `scrapeQueued: false` + `dedupeTtlSeconds`
+5. If claimed → publish `scrape.job` → worker scrapes
+6. Success → `results.ready` on `results.notify`
+7. Failure → publish to `scrape.dlx` retry tier (or `scrape.dead`), then ack
 
-> **Note:** Many live shops block headless browsers or omit JSON-LD. For a reliable local demo, point a watch at an HTML page that includes Schema.org Product JSON-LD (see fixtures under `packages/scrape-core/fixtures/`, or serve one with a tiny static server). Failures still **nack without requeue** until stage 13.
+> **Note:** Many live shops block headless browsers or omit JSON-LD. Prefer a page with Schema.org Product JSON-LD (see `packages/scrape-core/fixtures/`). Anti-bot work is stage 16.
 
-Second POST within 5 minutes for the same canonical URL:
+### List / get / update / delete
 
-```json
-{
-  "created": false,
-  "scrapeQueued": false,
-  "dedupeTtlSeconds": 280
-}
-```
-
-### List watches for an email
-
-```bash
-curl -s 'http://127.0.0.1:3000/watches?email=you@example.com' | jq
-```
-
-### Get one watch
-
-```bash
-curl -s "http://127.0.0.1:3000/watches/<WATCH_ID>" | jq
-```
-
-### Update threshold / currency / active
-
-```bash
-curl -s -X PATCH "http://127.0.0.1:3000/watches/<WATCH_ID>" \
-  -H 'content-type: application/json' \
-  -d '{"threshold": 15.5, "currency": "USD"}' | jq
-```
-
-### Soft-delete (deactivate)
-
-```bash
-curl -s -X DELETE "http://127.0.0.1:3000/watches/<WATCH_ID>" | jq
-# watch.active === false
-```
+Same as before — `GET /watches?email=...`, `GET|PATCH|DELETE /watches/:id`.
 
 ---
 
-## 4. What you should see when testing end-to-end (today)
+## 4. Retries and dead letter (stage 13)
+
+On scrape failure the worker:
+
+1. Classifies the error (`timeout`, `http_403`, `http_429`, `captcha`, `parse`, `proxy`, `unknown`)
+2. Increments `x-attempt` and sets `x-error-class` / `x-first-failure-at`
+3. Publishes to `scrape.dlx` with confirms, then acks the original job
+
+| Failed attempt → next | Route |
+|-----------------------|--------|
+| 1 → 2 | `scrape.retry.30s` |
+| 2 → 3 | `scrape.retry.5m` |
+| 3 → 4 | `scrape.retry.30m` |
+| exhausted / ≥ max | `scrape.dead` |
+
+`http_403` and `captcha` skip short tiers and jump to `scrape.retry.30m` when retries remain. Poison payloads (invalid JSON/schema) still **nack without requeue** → `scrape.fail` → `scrape.dead`.
+
+### Replay dead letters
+
+```bash
+pnpm replay:dead -- --dry-run          # peek first message
+pnpm replay:dead -- --limit 10         # republish up to 10 jobs to scrape.jobs
+pnpm replay:dead                       # replay all currently on scrape.dead
+```
+
+Replay resets `x-attempt` to `1` for a fresh budget.
+
+---
+
+## 5. What you should see when testing end-to-end (today)
 
 | Step | Expected result |
 |------|-----------------|
-| `POST /watches` | Watch saved in DB; often `scrapeQueued: true` |
-| Worker logs | `scrape result published` then `scrape job acknowledged` (on success) |
-| RabbitMQ UI → `scrape.jobs` | Message consumed (depth back to 0) |
-| RabbitMQ UI → `results.notify` | Message with `price` / `currency` / `source: "json_ld"` |
-| `price_history` table | **Still empty** — notifier writes prices in stage 14 |
+| `POST /watches` | Watch saved; often `scrapeQueued: true` |
+| Success | Worker logs `scrape result published`; message on `results.notify` |
+| Transient failure | Message on `scrape.retry.*`, then back on `scrape.jobs` after TTL |
+| Exhausted failures | Message on `scrape.dead` with `x-error-class` |
+| `price_history` | **Still empty** — notifier is stage 14 |
 | Alerts | **Not sent** |
 
-### Inspect data (optional)
-
-```bash
-# Watches in Postgres
-docker exec -it priceflux-postgres \
-  psql -U priceflux -d priceflux -c 'SELECT id, canonical_url, threshold, active FROM watches;'
-
-# Price history (expect 0 rows until stage 14)
-docker exec -it priceflux-postgres \
-  psql -U priceflux -d priceflux -c 'SELECT count(*) FROM price_history;'
-```
-
-RabbitMQ management UI: http://localhost:15672 → Queues → `scrape.jobs` / `results.notify`.
+RabbitMQ management UI: http://localhost:15672 → Queues.
 
 ---
 
-## 5. Automated tests (optional)
-
-With Compose up, topology applied, and Chromium installed:
+## 6. Automated tests (optional)
 
 ```bash
 pnpm --filter @priceflux/shared test
@@ -228,11 +208,11 @@ pnpm --filter @priceflux/worker-scraper test:integration
 pnpm lint
 ```
 
-Worker integration covers: local HTTP fixture → Playwright → extract → `results.ready` on `results.notify`.
+Worker integration covers success → `results.notify`, failure → `scrape.retry.30s`, and exhausted attempts → `scrape.dead`.
 
 ---
 
-## 6. Stop local stack
+## 7. Stop local stack
 
 ```bash
 # Ctrl+C API and worker terminals
@@ -244,31 +224,8 @@ docker compose -f infra/docker-compose.yml down
 
 ---
 
-## 7. JSON-LD extractor (stage 11)
+## Roadmap after stage 13
 
-`@priceflux/scrape-core` can parse Schema.org **Product / Offer** prices from HTML fixtures (no browser required for unit tests):
-
-```bash
-pnpm --filter @priceflux/scrape-core test
-```
-
-Example:
-
-```ts
-import { extractPriceFromHtml } from '@priceflux/scrape-core';
-
-const result = extractPriceFromHtml(htmlString);
-// { ok: true, data: { price, currency, title?, source: 'json_ld' } }
-// or { ok: false, reason: 'no_json_ld' | 'no_product' | 'no_price' | 'invalid_price' }
-```
-
-Fixtures live under `packages/scrape-core/fixtures/`.
-
----
-
-## Roadmap after stage 12
-
-1. **13** — retries / dead letter for failed scrapes  
-2. **14** — store price history + alert when below threshold  
+1. **14** — store price history + alert when below threshold  
 
 Until stage 14, `results.ready` messages sit on `results.notify` with no consumer writing history or sending alerts.
