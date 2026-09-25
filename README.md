@@ -2,6 +2,10 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
+**How far are we?** Stages **01–10** are implemented on this branch: you can create watches from a URL, enqueue scrape jobs, and have a worker acknowledge them. **Live price scraping and drop alerts are not available yet** (stages 11–14).
+
+**Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup, API examples, and what you can / cannot test today.
+
 ## Stack
 
 - **Language:** TypeScript / Node.js
@@ -63,6 +67,14 @@ curl -s -X POST http://127.0.0.1:3000/watches \
   -d '{"email":"you@example.com","url":"https://shop.example/p/1","threshold":20,"currency":"USD"}'
 ```
 
+### Scraper worker (skeleton)
+
+```bash
+pnpm topology:assert
+pnpm dev:worker-scraper
+# In another terminal, POST /watches (or publish a scrape job) — worker logs and acks.
+```
+
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.
 
 ## Debugging (VS Code / Cursor)
@@ -83,4 +95,6 @@ Workspace setting `debug.javascript.autoAttachFilter` is **`onlyWithFlag`** (not
 
 ## Delivery
 
-Incremental PRs into `main`. Track progress in [docs/DELIVERY.md](docs/DELIVERY.md). Cursor project rules in `.cursor/rules/` encode the workflow for every chat.
+Incremental PRs into `main`. Track progress in [docs/DELIVERY.md](docs/DELIVERY.md).  
+Day-to-day usage through stage 10: [docs/USAGE.md](docs/USAGE.md).  
+Cursor project rules in `.cursor/rules/` encode the workflow for every chat.
