@@ -236,13 +236,32 @@ docker compose -f infra/docker-compose.yml down
 
 ---
 
-## Roadmap after stage 10
+## 7. JSON-LD extractor (stage 11)
 
-When you continue development:
+`@priceflux/scrape-core` can parse Schema.org **Product / Offer** prices from HTML fixtures (no browser, no live URLs yet):
 
-1. **11** — extract price from HTML/JSON-LD fixtures  
-2. **12** — Playwright loads URL → publish result  
-3. **13** — retries / dead letter for failed scrapes  
-4. **14** — store price history + alert when below threshold  
+```bash
+pnpm --filter @priceflux/scrape-core test
+```
 
-Until then, the product is an **ingestion + queue pipeline**, not a live price tracker.
+Example (from app or REPL after build):
+
+```ts
+import { extractPriceFromHtml } from '@priceflux/scrape-core';
+
+const result = extractPriceFromHtml(htmlString);
+// { ok: true, data: { price, currency, title?, source: 'json_ld' } }
+// or { ok: false, reason: 'no_json_ld' | 'no_product' | 'no_price' | 'invalid_price' }
+```
+
+Fixtures live under `packages/scrape-core/fixtures/`.
+
+---
+
+## Roadmap after stage 11
+
+1. **12** — Playwright loads URL → extract → publish result  
+2. **13** — retries / dead letter for failed scrapes  
+3. **14** — store price history + alert when below threshold  
+
+Until stage 12+, submitting a URL via the API still does **not** fetch a live price.

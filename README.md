@@ -2,7 +2,7 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–10** are implemented on this branch: you can create watches from a URL, enqueue scrape jobs, and have a worker acknowledge them. **Live price scraping and drop alerts are not available yet** (stages 11–14).
+**How far are we?** Stages **01–10** are on `main` (watches API + worker ack). Stage **11** adds JSON-LD price extraction from HTML fixtures (still no live Playwright scrape). **Drop alerts are not available yet** (stages 12–14).
 
 **Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup, API examples, and what you can / cannot test today.
 
