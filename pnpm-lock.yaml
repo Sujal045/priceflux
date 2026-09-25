@@ -82,10 +82,19 @@ importers:
 
   apps/worker-scraper:
     dependencies:
+      '@priceflux/mq':
+        specifier: workspace:*
+        version: link:../../packages/mq
       '@priceflux/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      amqplib:
+        specifier: ^0.10.5
+        version: 0.10.9
     devDependencies:
+      '@types/amqplib':
+        specifier: ^0.10.7
+        version: 0.10.8
       tsx:
         specifier: ^4.19.3
         version: 4.23.15

@@ -25,8 +25,8 @@ Last updated: 2026-09-23
 | 06 | `packages/cache` Redis dedupe | `feat/06-cache-dedupe` | **done** | Merged via PR #5 |
 | 07 | `packages/db` schema + migrations | `feat/07-db-schema` | **done** | Merged via PR #6 |
 | 08 | Fastify API skeleton (`/healthz`) | `feat/08-api-skeleton` | **done** | Merged via PR #7 |
-| 09 | Watches API + enqueue | `feat/09-watches-enqueue` | **in progress** | CRUD + Redis dedupe + scrape.job |
-| 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | pending | |
+| 09 | Watches API + enqueue | `feat/09-watches-enqueue` | **done** | Merged via PR #8 |
+| 10 | Scraper worker consumer skeleton | `feat/10-worker-skeleton` | **in progress** | Consume + ack (no Playwright yet) |
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | pending | Fixtures + unit tests |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | pending | |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | pending | |
@@ -38,7 +38,7 @@ Last updated: 2026-09-23
 
 ## Next
 
-Finish **PR 09** → merge to `main` → then start **PR 10** (scraper worker skeleton).
+Finish **PR 10** → merge to `main` → then start **PR 11** (`scrape-core` JSON-LD).
 
 ## How to update this file
 

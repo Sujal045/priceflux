@@ -4,17 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
-    "test": "node -e \"console.log('no tests yet')\"",
-    "dev": "node --watch --import tsx src/index.ts",
+    "test": "tsx --test src/*.test.ts src/**/*.test.ts",
+    "test:integration": "PRICEFLUX_WORKER_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/*.test.ts src/**/*.test.ts",
+    "dev": "node --watch --import tsx --env-file=../../.env src/index.ts",
+    "start": "node --env-file=../../.env dist/index.js",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@priceflux/shared": "workspace:*"
+    "@priceflux/mq": "workspace:*",
+    "@priceflux/shared": "workspace:*",
+    "amqplib": "^0.10.5"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
