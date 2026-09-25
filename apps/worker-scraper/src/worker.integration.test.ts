@@ -21,6 +21,7 @@ import {
 } from '@priceflux/shared';
 
 import { createPlaywrightFetcher, type PageFetcher } from './browser.js';
+import { ScrapeFailure } from './scrape.js';
 import { startScraperWorker, type ScraperWorker } from './worker.js';
 
 const integrationEnabled = process.env.PRICEFLUX_WORKER_INTEGRATION === '1';
@@ -72,6 +73,7 @@ describe(
     after(async () => {
       if (worker) {
         await worker.stop();
+        worker = undefined;
       }
       if (fetcher) {
         await fetcher.close();
@@ -83,6 +85,16 @@ describe(
       }
       await publisher.close();
     });
+
+    async function replaceWorker(
+      next: ScraperWorker,
+    ): Promise<ScraperWorker> {
+      if (worker) {
+        await worker.stop();
+      }
+      worker = next;
+      return next;
+    }
 
     it('scrapes a fixture URL and publishes results.ready', async () => {
       assert.ok(fixtureUrl);
@@ -98,20 +110,22 @@ describe(
         requestedAt: new Date().toISOString(),
       });
 
-      worker = await startScraperWorker({
-        config: {
-          prefetch: 1,
-          logLevel: 'silent',
-          headless: true,
-          navigationTimeoutMs: 15_000,
-        },
-        fetcher,
-        log: {
-          info: () => undefined,
-          error: () => undefined,
-          warn: () => undefined,
-        },
-      });
+      await replaceWorker(
+        await startScraperWorker({
+          config: {
+            prefetch: 1,
+            logLevel: 'silent',
+            headless: true,
+            navigationTimeoutMs: 15_000,
+          },
+          fetcher,
+          log: {
+            info: () => undefined,
+            error: () => undefined,
+            warn: () => undefined,
+          },
+        }),
+      );
 
       await publishScrapeJob(publisher.channel, {
         job,
@@ -153,6 +167,127 @@ describe(
         };
         assert.notEqual(leftoverBody.jobId, job.jobId);
       }
+    });
+
+    it('schedules a scrape failure onto scrape.retry.30s', async () => {
+      const url = `https://shop.example/retry/${randomUUID()}`;
+      const job = ScrapeJobSchema.parse({
+        jobId: randomUUID(),
+        url,
+        canonicalUrl: url,
+        dedupeKey: dedupeKeyForUrl(url),
+        userId: randomUUID(),
+        watchId: randomUUID(),
+        requestedAt: new Date().toISOString(),
+      });
+
+      await replaceWorker(
+        await startScraperWorker({
+          config: {
+            prefetch: 1,
+            logLevel: 'silent',
+            headless: true,
+            navigationTimeoutMs: 15_000,
+          },
+          log: {
+            info: () => undefined,
+            error: () => undefined,
+            warn: () => undefined,
+          },
+          onJob: async () => {
+            throw new ScrapeFailure('no_json_ld', 'forced parse failure');
+          },
+        }),
+      );
+
+      await publishScrapeJob(publisher.channel, {
+        job,
+        headers: {
+          'x-attempt': 1,
+          'x-max-attempts': DEFAULT_MAX_ATTEMPTS,
+          'x-dedupe-key': job.dedupeKey,
+        },
+      });
+
+      const deadline = Date.now() + 10_000;
+      let retryMsg: Awaited<ReturnType<typeof publisher.channel.get>> = false;
+      while (Date.now() < deadline) {
+        retryMsg = await publisher.channel.get(Queues.scrapeRetry30s, {
+          noAck: false,
+        });
+        if (retryMsg) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+
+      assert.ok(retryMsg, 'expected message on scrape.retry.30s');
+      const body = ScrapeJobSchema.parse(
+        JSON.parse(retryMsg.content.toString('utf8')),
+      );
+      assert.equal(body.jobId, job.jobId);
+      assert.equal(retryMsg.properties.headers?.['x-attempt'], 2);
+      assert.equal(retryMsg.properties.headers?.['x-error-class'], 'parse');
+      // Drop from the TTL queue so later tests / TTL expiry do not requeue it.
+      publisher.channel.ack(retryMsg);
+    });
+
+    it('parks a scrape failure on scrape.dead when attempts are exhausted', async () => {
+      const url = `https://shop.example/dead/${randomUUID()}`;
+      const job = ScrapeJobSchema.parse({
+        jobId: randomUUID(),
+        url,
+        canonicalUrl: url,
+        dedupeKey: dedupeKeyForUrl(url),
+        userId: randomUUID(),
+        watchId: randomUUID(),
+        requestedAt: new Date().toISOString(),
+      });
+
+      await replaceWorker(
+        await startScraperWorker({
+          config: {
+            prefetch: 1,
+            logLevel: 'silent',
+            headless: true,
+            navigationTimeoutMs: 15_000,
+          },
+          log: {
+            info: () => undefined,
+            error: () => undefined,
+            warn: () => undefined,
+          },
+          onJob: async () => {
+            throw new ScrapeFailure('http_403', 'forced block');
+          },
+        }),
+      );
+
+      await publishScrapeJob(publisher.channel, {
+        job,
+        headers: {
+          'x-attempt': 1,
+          'x-max-attempts': 1,
+          'x-dedupe-key': job.dedupeKey,
+        },
+      });
+
+      const deadline = Date.now() + 10_000;
+      let deadMsg: Awaited<ReturnType<typeof publisher.channel.get>> = false;
+      while (Date.now() < deadline) {
+        deadMsg = await publisher.channel.get(Queues.scrapeDead, {
+          noAck: false,
+        });
+        if (deadMsg) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+
+      assert.ok(deadMsg, 'expected message on scrape.dead');
+      const body = ScrapeJobSchema.parse(
+        JSON.parse(deadMsg.content.toString('utf8')),
+      );
+      assert.equal(body.jobId, job.jobId);
+      assert.equal(deadMsg.properties.headers?.['x-error-class'], 'http_403');
+      assert.equal(deadMsg.properties.headers?.['x-attempt'], 1);
+      publisher.channel.ack(deadMsg);
     });
   },
 );

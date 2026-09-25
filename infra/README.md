@@ -34,6 +34,12 @@ User/vhost credentials come from Compose `RABBITMQ_DEFAULT_*` / `.env`. Topology
 | Queue    | `scrape.dead`      | parking lot (`scrape.dead` + unexpected `scrape.fail`)    |
 | Queue    | `results.notify`   | bound to `results.ready`                                  |
 
+Worker failures publish explicitly to `scrape.dlx` (retry / dead) with confirms, then ack. Replay parked jobs:
+
+```bash
+pnpm replay:dead -- --limit 5
+```
+
 ```bash
 pnpm topology:assert
 ```

@@ -3,19 +3,27 @@ import type { ConsumeMessage } from 'amqplib';
 import {
   assertTopology,
   connectRabbitMq,
+  publishScrapeFailure,
   publishScrapeResult,
   type RabbitConnection,
 } from '@priceflux/mq';
-import { Queues, ScrapeJobSchema, type ScrapeJob } from '@priceflux/shared';
+import {
+  Queues,
+  ScrapeJobSchema,
+  planScrapeFailureRoute,
+  type ScrapeJob,
+} from '@priceflux/shared';
 
 import {
   createPlaywrightFetcher,
   type PageFetcher,
 } from './browser.js';
+import { classifyScrapeError } from './classify.js';
 import {
   loadScraperWorkerConfig,
   type ScraperWorkerConfig,
 } from './config.js';
+import { readScrapeJobHeaders } from './headers.js';
 import { scrapeJob } from './scrape.js';
 
 export type JobHandler = (job: ScrapeJob, raw: ConsumeMessage) => Promise<void>;
@@ -53,8 +61,10 @@ const defaultLog = {
 
 /**
  * Consume `scrape.jobs` with manual ack.
- * Invalid payloads and scrape failures are nack'd without requeue
- * (→ DLX / scrape.fail → scrape.dead). Retry tiers land in stage 13.
+ *
+ * Success: publish `results.ready`, then ack.
+ * Scrape failure: publish to `scrape.dlx` (retry tier or dead) with confirms,
+ * then ack. Poison payloads: nack without requeue → `scrape.fail` → dead.
  */
 export async function startScraperWorker(
   options: StartScraperWorkerOptions = {},
@@ -109,9 +119,10 @@ export async function startScraperWorker(
       }
 
       void (async () => {
+        let job: ScrapeJob | undefined;
         try {
           const parsed: unknown = JSON.parse(msg.content.toString('utf8'));
-          const job = ScrapeJobSchema.parse(parsed);
+          job = ScrapeJobSchema.parse(parsed);
           await onJob(job, msg);
           rabbit.channel.ack(msg);
           log.info(
@@ -119,14 +130,59 @@ export async function startScraperWorker(
             'scrape job acknowledged',
           );
         } catch (err) {
-          log.error(
-            {
-              err: err instanceof Error ? err.message : err,
-              content: msg.content.toString('utf8').slice(0, 500),
-            },
-            'scrape job failed; nack without requeue',
-          );
-          rabbit.channel.nack(msg, false, false);
+          if (!job) {
+            log.error(
+              {
+                err: err instanceof Error ? err.message : err,
+                content: msg.content.toString('utf8').slice(0, 500),
+              },
+              'poison scrape job; nack without requeue',
+            );
+            rabbit.channel.nack(msg, false, false);
+            return;
+          }
+
+          const errorClass = classifyScrapeError(err);
+          const currentHeaders = readScrapeJobHeaders(msg, job);
+          const plan = planScrapeFailureRoute({
+            headers: currentHeaders,
+            errorClass,
+          });
+
+          try {
+            await publishScrapeFailure(rabbit.channel, {
+              job,
+              routingKey: plan.routingKey,
+              headers: plan.headers,
+            });
+            rabbit.channel.ack(msg);
+            log.warn(
+              {
+                jobId: job.jobId,
+                errorClass,
+                destination: plan.destination,
+                routingKey: plan.routingKey,
+                attempt: plan.headers['x-attempt'],
+                maxAttempts: plan.headers['x-max-attempts'],
+                err: err instanceof Error ? err.message : err,
+              },
+              plan.destination === 'dead'
+                ? 'scrape job parked on dead letter'
+                : 'scrape job scheduled for retry',
+            );
+          } catch (publishErr) {
+            log.error(
+              {
+                jobId: job.jobId,
+                err:
+                  publishErr instanceof Error
+                    ? publishErr.message
+                    : publishErr,
+              },
+              'failed to publish scrape failure; nack without requeue',
+            );
+            rabbit.channel.nack(msg, false, false);
+          }
         }
       })();
     },

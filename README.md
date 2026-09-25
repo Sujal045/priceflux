@@ -2,7 +2,7 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–11** are on `main`. Stage **12** (this branch / upcoming PR) wires Playwright → JSON-LD extract → `results.ready`. **Drop alerts and price history writes are not available yet** (stages 13–14).
+**How far are we?** Stages **01–12** are on `main`. Stage **13** (this branch / upcoming PR) adds DLX retries + dead letter. **Drop alerts and price history writes are not available yet** (stage 14).
 
 **Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup, API examples, and what you can / cannot test today.
 
