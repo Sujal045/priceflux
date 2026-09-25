@@ -2,7 +2,7 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–10** are on `main` (watches API + worker ack). Stage **11** adds JSON-LD price extraction from HTML fixtures (still no live Playwright scrape). **Drop alerts are not available yet** (stages 12–14).
+**How far are we?** Stages **01–11** are on `main`. Stage **12** (this branch / upcoming PR) wires Playwright → JSON-LD extract → `results.ready`. **Drop alerts and price history writes are not available yet** (stages 13–14).
 
 **Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup, API examples, and what you can / cannot test today.
 
@@ -67,12 +67,14 @@ curl -s -X POST http://127.0.0.1:3000/watches \
   -d '{"email":"you@example.com","url":"https://shop.example/p/1","threshold":20,"currency":"USD"}'
 ```
 
-### Scraper worker (skeleton)
+### Scraper worker
 
 ```bash
+pnpm --filter @priceflux/worker-scraper playwright:install
 pnpm topology:assert
 pnpm dev:worker-scraper
-# In another terminal, POST /watches (or publish a scrape job) — worker logs and acks.
+# In another terminal, POST /watches (or publish a scrape job).
+# On success the worker publishes results.ready (see results.notify in RabbitMQ UI).
 ```
 
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.
@@ -96,5 +98,5 @@ Workspace setting `debug.javascript.autoAttachFilter` is **`onlyWithFlag`** (not
 ## Delivery
 
 Incremental PRs into `main`. Track progress in [docs/DELIVERY.md](docs/DELIVERY.md).  
-Day-to-day usage through stage 10: [docs/USAGE.md](docs/USAGE.md).  
-Cursor project rules in `.cursor/rules/` encode the workflow for every chat.
+Day-to-day usage: [docs/USAGE.md](docs/USAGE.md).  
+Cursor project rules in `.cursor/rules/` encode the workflow for every chat. Agent entrypoint: [AGENTS.md](AGENTS.md).

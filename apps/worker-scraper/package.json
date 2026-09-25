@@ -9,14 +9,17 @@
     "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
     "test": "tsx --test src/*.test.ts src/**/*.test.ts",
     "test:integration": "PRICEFLUX_WORKER_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/*.test.ts src/**/*.test.ts",
+    "playwright:install": "playwright install chromium",
     "dev": "node --watch --import tsx --env-file=../../.env src/index.ts",
     "start": "node --env-file=../../.env dist/index.js",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@priceflux/mq": "workspace:*",
+    "@priceflux/scrape-core": "workspace:*",
     "@priceflux/shared": "workspace:*",
-    "amqplib": "^0.10.5"
+    "amqplib": "^0.10.5",
+    "playwright": "^1.63.0"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",

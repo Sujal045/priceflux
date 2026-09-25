@@ -1,13 +1,13 @@
-# Priceflux usage guide (through stage 10)
+# Priceflux usage guide (through stage 12)
 
-This document describes **what works today** after stages **01–10**, and how to run/test it locally.
+This document describes **what works today** after stages **01–12**, and how to run/test it locally.
 
-> **Short answer:** You can submit a product URL via the API, persist a watch, enqueue a scrape job, and have the worker **ack** it.  
-> You **cannot** yet scrape live prices, detect price drops, or get alerts. That starts at stages **11–14**.
+> **Short answer:** You can submit a product URL via the API, persist a watch, enqueue a scrape job, and have the worker **fetch the page with Playwright**, extract a JSON-LD price, and publish `results.ready`.  
+> You **cannot** yet retry failed scrapes, write price history, or send drop alerts. That is stages **13–14**.
 
 ---
 
-## What is completed (01–10)
+## What is completed (01–12)
 
 | Stage | Capability |
 |-------|------------|
@@ -20,19 +20,19 @@ This document describes **what works today** after stages **01–10**, and how t
 | 07 | DB schema: `users`, `watches`, `price_history` + migrations |
 | 08 | Fastify API with `GET /healthz` |
 | 09 | Watches CRUD + enqueue `scrape.job` (with Redis dedupe) |
-| 10 | Scraper worker consumes `scrape.jobs` and **acks** (noop handler) |
+| 10 | Scraper worker consumes `scrape.jobs` with manual ack |
+| 11 | `@priceflux/scrape-core` JSON-LD Product/Offer extractor |
+| 12 | Playwright fetch → extract → publish `results.ready` |
 
 ### What is **not** done yet
 
 | Later stage | Missing capability |
 |-------------|-------------------|
-| 11 | JSON-LD / HTML price extraction |
-| 12 | Playwright fetch → publish `results.ready` |
 | 13 | Retry / DLX worker behavior for scrape failures |
 | 14 | Write `price_history`, compare threshold, send alerts |
 | — | Web UI (v2) |
 
-So: **giving a URL to the API does not change or read a real product price today.**
+So: **giving a URL to the API can scrape and publish a price result**, but nothing yet stores history or alerts you.
 
 ---
 
@@ -40,12 +40,14 @@ So: **giving a URL to the API does not change or read a real product price today
 
 - Node.js ≥ 20, pnpm 9
 - Docker + Docker Compose
+- Chromium for Playwright (one-time install)
 - Repo checked out; dependencies installed
 
 ```bash
 cd ~/Projects/priceflux
 cp -n .env.example .env
 pnpm install
+pnpm --filter @priceflux/worker-scraper playwright:install
 pnpm build
 ```
 
@@ -88,7 +90,7 @@ Use **two terminals**.
 pnpm dev:api
 ```
 
-**Terminal B — scraper worker (skeleton)**
+**Terminal B — scraper worker**
 
 ```bash
 pnpm dev:worker-scraper
@@ -138,8 +140,10 @@ What happens:
 2. User row is created/found by email
 3. Watch is inserted/updated in Postgres
 4. Redis tries to claim `dedupeKey` for **5 minutes**
-5. If claimed → publish `scrape.job` to RabbitMQ → worker receives it and **acks** (no price scrape yet)
+5. If claimed → publish `scrape.job` to RabbitMQ → worker fetches with Playwright, extracts JSON-LD, publishes `results.ready`
 6. If not claimed (same URL within 5 minutes) → `scrapeQueued: false` + `dedupeTtlSeconds`
+
+> **Note:** Many live shops block headless browsers or omit JSON-LD. For a reliable local demo, point a watch at an HTML page that includes Schema.org Product JSON-LD (see fixtures under `packages/scrape-core/fixtures/`, or serve one with a tiny static server). Failures still **nack without requeue** until stage 13.
 
 Second POST within 5 minutes for the same canonical URL:
 
@@ -185,10 +189,11 @@ curl -s -X DELETE "http://127.0.0.1:3000/watches/<WATCH_ID>" | jq
 | Step | Expected result |
 |------|-----------------|
 | `POST /watches` | Watch saved in DB; often `scrapeQueued: true` |
-| Worker logs | Message like `scrape job acknowledged (skeleton)` |
+| Worker logs | `scrape result published` then `scrape job acknowledged` (on success) |
 | RabbitMQ UI → `scrape.jobs` | Message consumed (depth back to 0) |
-| `price_history` table | **Still empty** — nothing writes prices yet |
-| Real shop price | **Not fetched** |
+| RabbitMQ UI → `results.notify` | Message with `price` / `currency` / `source: "json_ld"` |
+| `price_history` table | **Still empty** — notifier writes prices in stage 14 |
+| Alerts | **Not sent** |
 
 ### Inspect data (optional)
 
@@ -202,13 +207,13 @@ docker exec -it priceflux-postgres \
   psql -U priceflux -d priceflux -c 'SELECT count(*) FROM price_history;'
 ```
 
-RabbitMQ management UI: http://localhost:15672 → Queues → `scrape.jobs`.
+RabbitMQ management UI: http://localhost:15672 → Queues → `scrape.jobs` / `results.notify`.
 
 ---
 
 ## 5. Automated tests (optional)
 
-With Compose up, topology applied, and migrations run:
+With Compose up, topology applied, and Chromium installed:
 
 ```bash
 pnpm --filter @priceflux/shared test
@@ -217,10 +222,13 @@ pnpm --filter @priceflux/cache test:integration
 pnpm --filter @priceflux/db test:integration
 pnpm --filter @priceflux/api test
 pnpm --filter @priceflux/api test:integration
+pnpm --filter @priceflux/scrape-core test
 pnpm --filter @priceflux/worker-scraper test
 pnpm --filter @priceflux/worker-scraper test:integration
 pnpm lint
 ```
+
+Worker integration covers: local HTTP fixture → Playwright → extract → `results.ready` on `results.notify`.
 
 ---
 
@@ -238,13 +246,13 @@ docker compose -f infra/docker-compose.yml down
 
 ## 7. JSON-LD extractor (stage 11)
 
-`@priceflux/scrape-core` can parse Schema.org **Product / Offer** prices from HTML fixtures (no browser, no live URLs yet):
+`@priceflux/scrape-core` can parse Schema.org **Product / Offer** prices from HTML fixtures (no browser required for unit tests):
 
 ```bash
 pnpm --filter @priceflux/scrape-core test
 ```
 
-Example (from app or REPL after build):
+Example:
 
 ```ts
 import { extractPriceFromHtml } from '@priceflux/scrape-core';
@@ -258,10 +266,9 @@ Fixtures live under `packages/scrape-core/fixtures/`.
 
 ---
 
-## Roadmap after stage 11
+## Roadmap after stage 12
 
-1. **12** — Playwright loads URL → extract → publish result  
-2. **13** — retries / dead letter for failed scrapes  
-3. **14** — store price history + alert when below threshold  
+1. **13** — retries / dead letter for failed scrapes  
+2. **14** — store price history + alert when below threshold  
 
-Until stage 12+, submitting a URL via the API still does **not** fetch a live price.
+Until stage 14, `results.ready` messages sit on `results.notify` with no consumer writing history or sending alerts.

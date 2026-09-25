@@ -3,14 +3,20 @@ import type { ConsumeMessage } from 'amqplib';
 import {
   assertTopology,
   connectRabbitMq,
+  publishScrapeResult,
   type RabbitConnection,
 } from '@priceflux/mq';
 import { Queues, ScrapeJobSchema, type ScrapeJob } from '@priceflux/shared';
 
 import {
+  createPlaywrightFetcher,
+  type PageFetcher,
+} from './browser.js';
+import {
   loadScraperWorkerConfig,
   type ScraperWorkerConfig,
 } from './config.js';
+import { scrapeJob } from './scrape.js';
 
 export type JobHandler = (job: ScrapeJob, raw: ConsumeMessage) => Promise<void>;
 
@@ -24,9 +30,14 @@ export type StartScraperWorkerOptions = {
   config?: ScraperWorkerConfig;
   /**
    * Called for each valid scrape job.
-   * Skeleton default: log-only noop (real scraping lands in a later PR).
+   * Default: Playwright fetch → JSON-LD extract → publish `results.ready`.
    */
   onJob?: JobHandler;
+  /**
+   * Inject a page fetcher (tests). When omitted, Chromium is launched once
+   * for the worker lifetime unless `onJob` is fully overridden.
+   */
+  fetcher?: PageFetcher;
   log?: {
     info: (obj: unknown, msg?: string) => void;
     error: (obj: unknown, msg?: string) => void;
@@ -40,25 +51,55 @@ const defaultLog = {
   warn: (obj: unknown, msg?: string) => console.warn(msg ?? '', obj),
 };
 
-async function defaultOnJob(job: ScrapeJob): Promise<void> {
-  // Intentionally no-op beyond acknowledgment — Playwright lands in PR 12.
-  void job;
-}
-
 /**
  * Consume `scrape.jobs` with manual ack.
- * Invalid payloads are nack'd without requeue (→ DLX / scrape.fail → scrape.dead).
+ * Invalid payloads and scrape failures are nack'd without requeue
+ * (→ DLX / scrape.fail → scrape.dead). Retry tiers land in stage 13.
  */
 export async function startScraperWorker(
   options: StartScraperWorkerOptions = {},
 ): Promise<ScraperWorker> {
   const config = options.config ?? loadScraperWorkerConfig();
   const log = options.log ?? defaultLog;
-  const onJob = options.onJob ?? defaultOnJob;
 
   const rabbit = await connectRabbitMq();
   await assertTopology(rabbit.channel);
   await rabbit.channel.prefetch(config.prefetch);
+
+  let ownedFetcher: PageFetcher | undefined;
+  const resolveFetcher = async (): Promise<PageFetcher> => {
+    if (options.fetcher) return options.fetcher;
+    if (!ownedFetcher) {
+      ownedFetcher = await createPlaywrightFetcher({
+        headless: config.headless,
+        navigationTimeoutMs: config.navigationTimeoutMs,
+      });
+    }
+    return ownedFetcher;
+  };
+
+  const onJob: JobHandler =
+    options.onJob ??
+    (async (job) => {
+      const fetcher = await resolveFetcher();
+      const result = await scrapeJob(job, (url) => fetcher.fetchHtml(url));
+      await publishScrapeResult(rabbit.channel, result);
+      log.info(
+        {
+          jobId: result.jobId,
+          watchId: result.watchId,
+          price: result.price,
+          currency: result.currency,
+          source: result.source,
+        },
+        'scrape result published',
+      );
+    });
+
+  // Warm the browser when using the default handler so the first job is faster.
+  if (!options.onJob) {
+    await resolveFetcher();
+  }
 
   const { consumerTag } = await rabbit.channel.consume(
     Queues.scrapeJobs,
@@ -75,7 +116,7 @@ export async function startScraperWorker(
           rabbit.channel.ack(msg);
           log.info(
             { jobId: job.jobId, watchId: job.watchId, url: job.canonicalUrl },
-            'scrape job acknowledged (skeleton)',
+            'scrape job acknowledged',
           );
         } catch (err) {
           log.error(
@@ -103,6 +144,10 @@ export async function startScraperWorker(
       try {
         await rabbit.channel.cancel(consumerTag);
       } finally {
+        if (ownedFetcher) {
+          await ownedFetcher.close();
+          ownedFetcher = undefined;
+        }
         await rabbit.close();
       }
     },
