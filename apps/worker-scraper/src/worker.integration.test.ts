@@ -117,6 +117,7 @@ describe(
             logLevel: 'silent',
             headless: true,
             navigationTimeoutMs: 15_000,
+            metricsPort: 0,
           },
           fetcher,
           log: {
@@ -188,6 +189,7 @@ describe(
             logLevel: 'silent',
             headless: true,
             navigationTimeoutMs: 15_000,
+            metricsPort: 0,
           },
           log: {
             info: () => undefined,
@@ -249,6 +251,7 @@ describe(
             logLevel: 'silent',
             headless: true,
             navigationTimeoutMs: 15_000,
+            metricsPort: 0,
           },
           log: {
             info: () => undefined,

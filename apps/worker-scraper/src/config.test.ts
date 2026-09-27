@@ -10,6 +10,7 @@ describe('loadScraperWorkerConfig', () => {
     assert.equal(cfg.logLevel, 'info');
     assert.equal(cfg.headless, true);
     assert.equal(cfg.navigationTimeoutMs, 30_000);
+    assert.equal(cfg.metricsPort, 9101);
   });
 
   it('reads WORKER_SCRAPER_PREFETCH and browser options', () => {
@@ -18,11 +19,13 @@ describe('loadScraperWorkerConfig', () => {
       LOG_LEVEL: 'warn',
       WORKER_SCRAPER_HEADLESS: 'false',
       WORKER_SCRAPER_NAVIGATION_TIMEOUT_MS: '12000',
+      WORKER_SCRAPER_METRICS_PORT: '0',
     });
     assert.equal(cfg.prefetch, 2);
     assert.equal(cfg.logLevel, 'warn');
     assert.equal(cfg.headless, false);
     assert.equal(cfg.navigationTimeoutMs, 12_000);
+    assert.equal(cfg.metricsPort, 0);
   });
 
   it('rejects invalid prefetch', () => {

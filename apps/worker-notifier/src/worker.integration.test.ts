@@ -99,7 +99,7 @@ describe(
       );
 
       worker = await startNotifierWorker({
-        config: { prefetch: 1, logLevel: 'silent' },
+        config: { prefetch: 1, logLevel: 'silent', metricsPort: 0 },
         db,
         log: {
           info: () => undefined,

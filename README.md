@@ -2,9 +2,9 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–13** are on `main`. Stage **14** (this branch / upcoming PR) adds the notifier: `price_history` + threshold alerts. **Amazon-class sites still need anti-bot (stage 16).**
+**How far are we?** Stages **01–14** are on `main`. Stage **15** (this branch / upcoming PR) adds Prometheus metrics + correlation ids. **Amazon-class sites still need anti-bot (stage 16).**
 
-**Operator guide:** see [docs/USAGE.md](docs/USAGE.md) for setup and what you can realistically test.
+**Operator guide:** see [docs/USAGE.md](docs/USAGE.md). **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md).
 
 ## Stack
 

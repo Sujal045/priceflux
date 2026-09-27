@@ -16,6 +16,7 @@
   "dependencies": {
     "@priceflux/db": "workspace:*",
     "@priceflux/mq": "workspace:*",
+    "@priceflux/observability": "workspace:^",
     "@priceflux/shared": "workspace:*",
     "amqplib": "^0.10.5",
     "drizzle-orm": "^0.40.0"

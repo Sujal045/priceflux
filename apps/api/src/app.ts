@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import { loadApiConfig, type ApiConfig } from './config.js';
 import { infraPlugin } from './plugins/infra.js';
+import { metricsPlugin } from './plugins/metrics.js';
 import { healthRoutes } from './routes/health.js';
 import { watchesRoutes } from './routes/watches.js';
 
@@ -42,6 +43,7 @@ export async function buildApp(
 
   app.decorate('config', config);
   await app.register(healthRoutes);
+  await app.register(metricsPlugin);
 
   if (withInfra) {
     await app.register(infraPlugin);
