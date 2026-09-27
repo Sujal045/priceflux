@@ -3,13 +3,13 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-09-25
+Last updated: 2026-09-27
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 15** on branch `feat/15-observability` — Prometheus metrics, queue lag gauges, correlation ids.
+**Stage 16** on branch `feat/16-antibot` — proxy config, Patchright stealth flag, Redis per-domain rate limits.
 
-Code is ready for user commit + PR (not pushed). See [docs/OBSERVABILITY.md](OBSERVABILITY.md).
+Code is ready for user commit + PR (not pushed). See [docs/ANTIBOT.md](ANTIBOT.md).
 
 ## Workflow
 
@@ -37,14 +37,14 @@ Code is ready for user commit + PR (not pushed). See [docs/OBSERVABILITY.md](OBS
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **done** | Merged via PR #11 |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
 | 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 |
-| 15 | Observability baseline | `feat/15-observability` | **in progress** | Awaiting commit/PR |
-| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | pending | |
+| 15 | Observability baseline | `feat/15-observability` | **done** | Merged via PR #14 |
+| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **in progress** | Awaiting commit/PR |
 | 17 | Prod hardening docs | `feat/17-prod-docs` | pending | |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-After **PR 15** merges: start **PR 16** (`feat/16-antibot`) when the user asks — proxies / stealth (needed for many live shops).
+After **PR 16** merges: start **PR 17** (`feat/17-prod-docs`) when the user asks — quorum notes, HPA, dead-letter runbooks.
 
 ## How to update this file
 

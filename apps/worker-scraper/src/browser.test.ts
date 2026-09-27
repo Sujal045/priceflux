@@ -36,10 +36,14 @@ describe('createPlaywrightFetcher', () => {
   });
 
   after(async () => {
-    await fetcher.close();
-    await new Promise<void>((resolve, reject) => {
-      server.close((err) => (err ? reject(err) : resolve()));
-    });
+    if (fetcher) {
+      await fetcher.close();
+    }
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
   });
 
   it('loads fixture HTML via Chromium', async () => {

@@ -103,11 +103,14 @@ importers:
 
   apps/worker-scraper:
     dependencies:
+      '@priceflux/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
       '@priceflux/mq':
         specifier: workspace:*
         version: link:../../packages/mq
       '@priceflux/observability':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/observability
       '@priceflux/scrape-core':
         specifier: workspace:*
@@ -118,6 +121,9 @@ importers:
       amqplib:
         specifier: ^0.10.5
         version: 0.10.9
+      patchright:
+        specifier: 1.63.0
+        version: 1.63.0
       playwright:
         specifier: ^1.63.0
         version: 1.63.0
@@ -1365,6 +1371,16 @@ packages:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
 
+  patchright-core@1.63.0:
+    resolution: {integrity: sha512-nuRJVTMVKoOFzY8vmwFqJZR3F0trUCKiPzDSgCOPq/yHHTefm9czILV23dXJsi5mvS7sCy7U1CqG7edA/21DtQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  patchright@1.63.0:
+    resolution: {integrity: sha512-WVXhmNhAJ5I+CmcHEu/I3KMKhOlQaKS1XJsk+5nRIypKJ3Dq9IaQP29p4vB3I1FWCTarUXVRj02Na30wGcuztQ==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   path-exists@4.0.0:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
     engines: {node: '>=8'}
@@ -2531,6 +2547,12 @@ snapshots:
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
+
+  patchright-core@1.63.0: {}
+
+  patchright@1.63.0:
+    dependencies:
+      patchright-core: 1.63.0
 
   path-exists@4.0.0: {}
 

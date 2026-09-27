@@ -1,30 +1,30 @@
-# Priceflux usage guide (through stage 15)
+# Priceflux usage guide (through stage 16)
 
-This document describes **what works today** after stages **01–15**, and how to run/test it locally.
+This document describes **what works today** after stages **01–16**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for pages with Schema.org JSON-LD: watch → scrape → `price_history` → drop alert. Metrics are on `/metrics` (API) and worker ports **9101/9102**.  
-> **Real big-box sites (Amazon, etc.) usually still fail** until anti-bot (stage 16).
+> **Short answer:** Full pipeline works for JSON-LD fixtures. Optional anti-bot flags (stealth / proxy / domain rate limits) are **off or mild by default**. Amazon-class sites may still fail.
 
 ---
 
-## What is completed (01–15)
+## What is completed (01–16)
 
 | Stage | Capability |
 |-------|------------|
 | 01–09 | Monorepo, Compose, topology, contracts, mq/cache/db, API watches + enqueue |
 | 10–12 | Scraper worker + JSON-LD extract + Playwright → `results.ready` |
 | 13 | DLX retries + dead letter + `pnpm replay:dead` |
-| 14 | Notifier: `price_history` + threshold alerts (log / webhook stub) |
-| 15 | Prometheus metrics, queue lag gauges, `x-request-id` / `jobId` correlation |
+| 14 | Notifier: `price_history` + threshold alerts |
+| 15 | Prometheus metrics + correlation ids |
+| 16 | Feature-flagged stealth (Patchright), proxy URL, Redis domain rate limits |
 
 ### Still missing
 
 | Later | Missing |
 |-------|---------|
-| 16 | Anti-bot (proxies, stealth) — needed for many live shops |
+| 17 | Prod hardening docs (quorum, HPA, runbooks) |
 | — | Web UI (v2) |
 
-Metrics details: [OBSERVABILITY.md](OBSERVABILITY.md).
+Anti-bot details: [ANTIBOT.md](ANTIBOT.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ---
 
@@ -34,8 +34,8 @@ Metrics details: [OBSERVABILITY.md](OBSERVABILITY.md).
 |----------|----------------------------|
 | Local HTML with Product JSON-LD (fixture / static server) | **Works end-to-end**: history row + alert if `price <= threshold` |
 | Small/indie shop that exposes Schema.org Offer JSON-LD and allows headless Chromium | **May work** — try it; check worker logs / `scrape.dead` if not |
-| Amazon, Walmart, most major retailers | **Usually will not work yet** — bot blocks / no usable JSON-LD. Failures retry then land on `scrape.dead`. Stage **16** is for that. |
-| After 14, “can I check real websites?” | You can **point** real URLs at the API, but success depends on scrape (12/16), not on the notifier (14). |
+| Amazon, Walmart, most major retailers | **Often still fails** — try `SCRAPER_STEALTH=true` + residential `SCRAPER_PROXY_URL`; no guarantees |
+| After 16, “can I check real websites?” | Better odds with stealth/proxy, but not reliable for hard bot walls |
 
 **Best local demo:** serve `packages/scrape-core/fixtures/product-simple.html` (price `29.99` USD), create a watch with `threshold: 30`, run API + scraper + notifier.
 
@@ -104,14 +104,18 @@ pnpm replay:dead -- --limit 5
 
 ## Automated tests
 
+Integration tests share the same RabbitMQ queues as local workers. **Stop**
+`pnpm dev:worker-scraper` and `pnpm dev:worker-notifier` first — otherwise those
+processes steal messages and tests time out or see the wrong `x-error-class`.
+
 ```bash
 pnpm --filter @priceflux/worker-notifier test
 pnpm --filter @priceflux/worker-notifier test:integration   # needs Postgres + RabbitMQ
-pnpm --filter @priceflux/worker-scraper test:integration
+pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chromium
 ```
 
 ---
 
-## Roadmap after 15
+## Roadmap after 16
 
-1. **16** — anti-bot baseline (realistically required for Amazon-class sites)
+1. **17** — prod hardening docs (quorum queues, HPA, dead-letter runbooks)

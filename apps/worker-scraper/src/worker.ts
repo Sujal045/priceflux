@@ -1,6 +1,11 @@
 import type { ConsumeMessage } from 'amqplib';
 
 import {
+  connectRedis,
+  disconnectRedis,
+  type PricefluxRedis,
+} from '@priceflux/cache';
+import {
   asQueueDepthReader,
   createServiceMetrics,
   resolveCorrelationId,
@@ -33,6 +38,7 @@ import {
   loadScraperWorkerConfig,
   type ScraperWorkerConfig,
 } from './config.js';
+import { assertDomainRateAllow } from './domain-rate.js';
 import { readScrapeJobHeaders } from './headers.js';
 import { scrapeJob } from './scrape.js';
 
@@ -66,6 +72,8 @@ export type StartScraperWorkerOptions = {
    * for the worker lifetime unless `onJob` is fully overridden.
    */
   fetcher?: PageFetcher;
+  /** Inject Redis (tests). When omitted and domain rate limit > 0, connects. */
+  redis?: PricefluxRedis;
   metrics?: ServiceMetrics;
   log?: {
     info: (obj: unknown, msg?: string) => void;
@@ -111,6 +119,10 @@ export async function startScraperWorker(
   await assertTopology(rabbit.channel);
   await rabbit.channel.prefetch(config.prefetch);
 
+  const ownsRedis = !options.redis && config.domainRateLimit > 0;
+  const redis: PricefluxRedis | undefined =
+    options.redis ?? (ownsRedis ? await connectRedis() : undefined);
+
   const lagPoller: QueueLagPoller = startQueueLagPoller(
     metrics,
     asQueueDepthReader(rabbit.channel),
@@ -133,7 +145,19 @@ export async function startScraperWorker(
       ownedFetcher = await createPlaywrightFetcher({
         headless: config.headless,
         navigationTimeoutMs: config.navigationTimeoutMs,
+        stealth: config.stealth,
+        ...(config.proxyUrl !== undefined
+          ? { proxyUrl: config.proxyUrl }
+          : {}),
       });
+      log.info(
+        {
+          stealth: config.stealth,
+          proxy: Boolean(config.proxyUrl),
+          domainRateLimit: config.domainRateLimit,
+        },
+        'scraper browser ready',
+      );
     }
     return ownedFetcher;
   };
@@ -141,6 +165,12 @@ export async function startScraperWorker(
   const onJob: JobHandler =
     options.onJob ??
     (async (job) => {
+      if (redis && config.domainRateLimit > 0) {
+        await assertDomainRateAllow(redis, job.canonicalUrl, {
+          limit: config.domainRateLimit,
+          windowSeconds: config.domainRateWindowSeconds,
+        });
+      }
       const fetcher = await resolveFetcher();
       const result = await scrapeJob(job, (url) => fetcher.fetchHtml(url));
       await publishScrapeResult(rabbit.channel, result);
@@ -265,7 +295,14 @@ export async function startScraperWorker(
   );
 
   log.info(
-    { queue: Queues.scrapeJobs, prefetch: config.prefetch, consumerTag },
+    {
+      queue: Queues.scrapeJobs,
+      prefetch: config.prefetch,
+      consumerTag,
+      stealth: config.stealth,
+      proxy: Boolean(config.proxyUrl),
+      domainRateLimit: config.domainRateLimit,
+    },
     'scraper worker consuming',
   );
 
@@ -283,6 +320,9 @@ export async function startScraperWorker(
         if (ownedFetcher) {
           await ownedFetcher.close();
           ownedFetcher = undefined;
+        }
+        if (ownsRedis && redis) {
+          await disconnectRedis(redis);
         }
         await rabbit.close();
       }
