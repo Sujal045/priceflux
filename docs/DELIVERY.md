@@ -9,7 +9,7 @@ Last updated: 2026-09-27
 
 **Stage 16** on branch `feat/16-antibot` — proxy config, Patchright stealth flag, Redis per-domain rate limits.
 
-Code is ready for user commit + PR (not pushed). See [docs/ANTIBOT.md](ANTIBOT.md).
+Pushed to `origin/feat/16-antibot`. Open/merge the PR into `main`, then mark stage 16 **done**. See [docs/ANTIBOT.md](ANTIBOT.md).
 
 ## Workflow
 
@@ -38,7 +38,7 @@ Code is ready for user commit + PR (not pushed). See [docs/ANTIBOT.md](ANTIBOT.m
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
 | 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 |
 | 15 | Observability baseline | `feat/15-observability` | **done** | Merged via PR #14 |
-| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **in progress** | Awaiting commit/PR |
+| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **in progress** | Pushed; awaiting PR merge |
 | 17 | Prod hardening docs | `feat/17-prod-docs` | pending | |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 

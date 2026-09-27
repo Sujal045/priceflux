@@ -2,7 +2,7 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–15** are on `main`. Stage **16** (this branch / upcoming PR) adds feature-flagged stealth/proxy/domain rate limits. **Still not a guarantee against Amazon-class bot walls.**
+**How far are we?** Stages **01–15** are on `main`. Stage **16** (`feat/16-antibot`) adds feature-flagged stealth/proxy/domain rate limits — merge via PR. **Still not a guarantee against Amazon-class bot walls.**
 
 **Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md)
 

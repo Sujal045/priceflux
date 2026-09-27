@@ -20,6 +20,7 @@ import {
 } from '@priceflux/mq';
 import {
   ScrapeResultSchema,
+  Queues,
   dedupeKeyForUrl,
 } from '@priceflux/shared';
 
@@ -56,6 +57,14 @@ describe(
     });
 
     it('consumes results.ready, writes history, and alerts', async () => {
+      // Competing consumers (e.g. `pnpm dev:worker-notifier`) steal messages.
+      const ready = await publisher.channel.checkQueue(Queues.resultsNotify);
+      assert.equal(
+        ready.consumerCount,
+        0,
+        `results.notify has ${ready.consumerCount} consumer(s); stop pnpm dev:worker-notifier before integration tests`,
+      );
+
       const email = `worker-${randomUUID()}@example.com`;
       const [user] = await db.db.insert(users).values({ email }).returning();
       assert.ok(user);
