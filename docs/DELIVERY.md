@@ -7,9 +7,9 @@ Last updated: 2026-09-25
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 14** on branch `feat/14-notifier` — consume `results.ready`, write `price_history`, threshold alerts (log + optional webhook stub).
+**Stage 15** on branch `feat/15-observability` — Prometheus metrics, queue lag gauges, correlation ids.
 
-Code is ready for user commit + PR (not pushed).
+Code is ready for user commit + PR (not pushed). See [docs/OBSERVABILITY.md](OBSERVABILITY.md).
 
 ## Workflow
 
@@ -36,15 +36,15 @@ Code is ready for user commit + PR (not pushed).
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **done** | Merged via PR #10 |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **done** | Merged via PR #11 |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
-| 14 | Notifier + price history | `feat/14-notifier` | **in progress** | Awaiting commit/PR |
-| 15 | Observability baseline | `feat/15-observability` | pending | |
+| 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 |
+| 15 | Observability baseline | `feat/15-observability` | **in progress** | Awaiting commit/PR |
 | 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | pending | |
 | 17 | Prod hardening docs | `feat/17-prod-docs` | pending | |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-After **PR 14** merges: start **PR 15** (`feat/15-observability`) when the user asks.
+After **PR 15** merges: start **PR 16** (`feat/16-antibot`) when the user asks — proxies / stealth (needed for many live shops).
 
 ## How to update this file
 

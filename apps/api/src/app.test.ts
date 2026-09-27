@@ -51,5 +51,24 @@ describe('GET /healthz', () => {
     const res = await app.inject({ method: 'GET', url: '/healthz' });
     assert.equal(res.statusCode, 200);
     assert.deepEqual(res.json(), { status: 'ok', service: 'api' });
+    assert.ok(res.headers['x-request-id']);
+  });
+
+  it('exposes prometheus metrics', async () => {
+    await app.inject({ method: 'GET', url: '/healthz' });
+    const res = await app.inject({ method: 'GET', url: '/metrics' });
+    assert.equal(res.statusCode, 200);
+    assert.match(res.headers['content-type'] ?? '', /text\/plain|openmetrics/);
+    assert.match(res.body, /priceflux_http_requests_total/);
+    assert.match(res.body, /service="api"/);
+  });
+
+  it('echoes client x-request-id', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: { 'x-request-id': 'test-corr-123' },
+    });
+    assert.equal(res.headers['x-request-id'], 'test-corr-123');
   });
 });

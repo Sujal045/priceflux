@@ -3,6 +3,8 @@ export type ScraperWorkerConfig = {
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
   headless: boolean;
   navigationTimeoutMs: number;
+  /** Prometheus scrape port; `0` disables the metrics HTTP server. */
+  metricsPort: number;
 };
 
 const LOG_LEVELS = new Set([
@@ -56,10 +58,21 @@ export function loadScraperWorkerConfig(
     );
   }
 
+  const metricsPortRaw = env.WORKER_SCRAPER_METRICS_PORT ?? '9101';
+  const metricsPort = Number(metricsPortRaw);
+  if (
+    !Number.isInteger(metricsPort) ||
+    metricsPort < 0 ||
+    metricsPort > 65535
+  ) {
+    throw new Error(`Invalid WORKER_SCRAPER_METRICS_PORT: ${metricsPortRaw}`);
+  }
+
   return {
     prefetch,
     logLevel: logLevelRaw as ScraperWorkerConfig['logLevel'],
     headless,
     navigationTimeoutMs,
+    metricsPort,
   };
 }

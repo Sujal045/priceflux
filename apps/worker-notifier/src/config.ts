@@ -3,6 +3,8 @@ export type NotifierWorkerConfig = {
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
   /** Optional webhook URL for drop alerts (POST JSON). */
   webhookUrl?: string;
+  /** Prometheus scrape port; `0` disables the metrics HTTP server. */
+  metricsPort: number;
 };
 
 const LOG_LEVELS = new Set([
@@ -31,9 +33,20 @@ export function loadNotifierWorkerConfig(
 
   const webhookUrl = env.NOTIFIER_WEBHOOK_URL?.trim();
 
+  const metricsPortRaw = env.WORKER_NOTIFIER_METRICS_PORT ?? '9102';
+  const metricsPort = Number(metricsPortRaw);
+  if (
+    !Number.isInteger(metricsPort) ||
+    metricsPort < 0 ||
+    metricsPort > 65535
+  ) {
+    throw new Error(`Invalid WORKER_NOTIFIER_METRICS_PORT: ${metricsPortRaw}`);
+  }
+
   return {
     prefetch,
     logLevel: logLevelRaw as NotifierWorkerConfig['logLevel'],
+    metricsPort,
     ...(webhookUrl && webhookUrl.length > 0 ? { webhookUrl } : {}),
   };
 }

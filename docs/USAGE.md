@@ -1,13 +1,13 @@
-# Priceflux usage guide (through stage 14)
+# Priceflux usage guide (through stage 15)
 
-This document describes **what works today** after stages **01–14**, and how to run/test it locally.
+This document describes **what works today** after stages **01–15**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for pages with Schema.org JSON-LD: watch → scrape → `price_history` → drop alert (log / optional webhook).  
-> **Real big-box sites (Amazon, etc.) usually still fail** until anti-bot (stage 16). Stage 14 does not improve scraping; it only persists successful results and alerts.
+> **Short answer:** Full pipeline works for pages with Schema.org JSON-LD: watch → scrape → `price_history` → drop alert. Metrics are on `/metrics` (API) and worker ports **9101/9102**.  
+> **Real big-box sites (Amazon, etc.) usually still fail** until anti-bot (stage 16).
 
 ---
 
-## What is completed (01–14)
+## What is completed (01–15)
 
 | Stage | Capability |
 |-------|------------|
@@ -15,14 +15,16 @@ This document describes **what works today** after stages **01–14**, and how t
 | 10–12 | Scraper worker + JSON-LD extract + Playwright → `results.ready` |
 | 13 | DLX retries + dead letter + `pnpm replay:dead` |
 | 14 | Notifier: `price_history` + threshold alerts (log / webhook stub) |
+| 15 | Prometheus metrics, queue lag gauges, `x-request-id` / `jobId` correlation |
 
 ### Still missing
 
 | Later | Missing |
 |-------|---------|
-| 15 | Metrics / observability |
 | 16 | Anti-bot (proxies, stealth) — needed for many live shops |
 | — | Web UI (v2) |
+
+Metrics details: [OBSERVABILITY.md](OBSERVABILITY.md).
 
 ---
 
@@ -110,7 +112,6 @@ pnpm --filter @priceflux/worker-scraper test:integration
 
 ---
 
-## Roadmap after 14
+## Roadmap after 15
 
-1. **15** — metrics / observability  
-2. **16** — anti-bot baseline (realistically required for Amazon-class sites)
+1. **16** — anti-bot baseline (realistically required for Amazon-class sites)

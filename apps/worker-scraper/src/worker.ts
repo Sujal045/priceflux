@@ -1,6 +1,16 @@
 import type { ConsumeMessage } from 'amqplib';
 
 import {
+  asQueueDepthReader,
+  createServiceMetrics,
+  resolveCorrelationId,
+  startMetricsServer,
+  startQueueLagPoller,
+  type MetricsServer,
+  type QueueLagPoller,
+  type ServiceMetrics,
+} from '@priceflux/observability';
+import {
   assertTopology,
   connectRabbitMq,
   publishScrapeFailure,
@@ -26,10 +36,20 @@ import {
 import { readScrapeJobHeaders } from './headers.js';
 import { scrapeJob } from './scrape.js';
 
+const LAGGED_QUEUES = [
+  Queues.scrapeJobs,
+  Queues.scrapeRetry30s,
+  Queues.scrapeRetry5m,
+  Queues.scrapeRetry30m,
+  Queues.scrapeDead,
+  Queues.resultsNotify,
+] as const;
+
 export type JobHandler = (job: ScrapeJob, raw: ConsumeMessage) => Promise<void>;
 
 export type ScraperWorker = {
   rabbit: RabbitConnection;
+  metrics: ServiceMetrics;
   /** Resolves when the consumer is cancelled and the connection is closed. */
   stop: () => Promise<void>;
 };
@@ -46,6 +66,7 @@ export type StartScraperWorkerOptions = {
    * for the worker lifetime unless `onJob` is fully overridden.
    */
   fetcher?: PageFetcher;
+  metrics?: ServiceMetrics;
   log?: {
     info: (obj: unknown, msg?: string) => void;
     error: (obj: unknown, msg?: string) => void;
@@ -59,6 +80,19 @@ const defaultLog = {
   warn: (obj: unknown, msg?: string) => console.warn(msg ?? '', obj),
 };
 
+function recordJob(
+  metrics: ServiceMetrics,
+  outcome: string,
+  started: bigint,
+): void {
+  const labels = { worker: 'scraper', outcome };
+  metrics.jobsTotal.inc(labels);
+  metrics.jobDurationSeconds.observe(
+    labels,
+    Number(process.hrtime.bigint() - started) / 1e9,
+  );
+}
+
 /**
  * Consume `scrape.jobs` with manual ack.
  *
@@ -71,10 +105,26 @@ export async function startScraperWorker(
 ): Promise<ScraperWorker> {
   const config = options.config ?? loadScraperWorkerConfig();
   const log = options.log ?? defaultLog;
+  const metrics = options.metrics ?? createServiceMetrics('worker-scraper');
 
   const rabbit = await connectRabbitMq();
   await assertTopology(rabbit.channel);
   await rabbit.channel.prefetch(config.prefetch);
+
+  const lagPoller: QueueLagPoller = startQueueLagPoller(
+    metrics,
+    asQueueDepthReader(rabbit.channel),
+    LAGGED_QUEUES,
+  );
+
+  let metricsServer: MetricsServer | undefined;
+  if (config.metricsPort > 0) {
+    metricsServer = await startMetricsServer(metrics, config.metricsPort);
+    log.info(
+      { port: metricsServer.port },
+      'scraper metrics server listening',
+    );
+  }
 
   let ownedFetcher: PageFetcher | undefined;
   const resolveFetcher = async (): Promise<PageFetcher> => {
@@ -96,6 +146,7 @@ export async function startScraperWorker(
       await publishScrapeResult(rabbit.channel, result);
       log.info(
         {
+          correlationId: job.jobId,
           jobId: result.jobId,
           watchId: result.watchId,
           price: result.price,
@@ -119,18 +170,30 @@ export async function startScraperWorker(
       }
 
       void (async () => {
+        const started = process.hrtime.bigint();
         let job: ScrapeJob | undefined;
         try {
           const parsed: unknown = JSON.parse(msg.content.toString('utf8'));
           job = ScrapeJobSchema.parse(parsed);
+          const correlationId = resolveCorrelationId(
+            msg.properties.headers as Record<string, unknown> | undefined,
+            job.jobId,
+          );
           await onJob(job, msg);
           rabbit.channel.ack(msg);
+          recordJob(metrics, 'success', started);
           log.info(
-            { jobId: job.jobId, watchId: job.watchId, url: job.canonicalUrl },
+            {
+              correlationId,
+              jobId: job.jobId,
+              watchId: job.watchId,
+              url: job.canonicalUrl,
+            },
             'scrape job acknowledged',
           );
         } catch (err) {
           if (!job) {
+            recordJob(metrics, 'poison', started);
             log.error(
               {
                 err: err instanceof Error ? err.message : err,
@@ -148,6 +211,10 @@ export async function startScraperWorker(
             headers: currentHeaders,
             errorClass,
           });
+          const correlationId = resolveCorrelationId(
+            msg.properties.headers as Record<string, unknown> | undefined,
+            job.jobId,
+          );
 
           try {
             await publishScrapeFailure(rabbit.channel, {
@@ -156,8 +223,14 @@ export async function startScraperWorker(
               headers: plan.headers,
             });
             rabbit.channel.ack(msg);
+            recordJob(
+              metrics,
+              plan.destination === 'dead' ? 'dead' : 'retry',
+              started,
+            );
             log.warn(
               {
+                correlationId,
                 jobId: job.jobId,
                 errorClass,
                 destination: plan.destination,
@@ -171,8 +244,10 @@ export async function startScraperWorker(
                 : 'scrape job scheduled for retry',
             );
           } catch (publishErr) {
+            recordJob(metrics, 'publish_error', started);
             log.error(
               {
+                correlationId,
                 jobId: job.jobId,
                 err:
                   publishErr instanceof Error
@@ -196,10 +271,15 @@ export async function startScraperWorker(
 
   return {
     rabbit,
+    metrics,
     stop: async () => {
       try {
         await rabbit.channel.cancel(consumerTag);
       } finally {
+        lagPoller.stop();
+        if (metricsServer) {
+          await metricsServer.close();
+        }
         if (ownedFetcher) {
           await ownedFetcher.close();
           ownedFetcher = undefined;

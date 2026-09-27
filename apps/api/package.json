@@ -17,6 +17,7 @@
     "@priceflux/cache": "workspace:*",
     "@priceflux/db": "workspace:*",
     "@priceflux/mq": "workspace:*",
+    "@priceflux/observability": "workspace:^",
     "@priceflux/shared": "workspace:*",
     "drizzle-orm": "^0.40.0",
     "fastify": "^5.2.1",
