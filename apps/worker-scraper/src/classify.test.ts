@@ -14,6 +14,10 @@ describe('classifyScrapeError', () => {
       classifyScrapeError(new ScrapeFailure('http_429')),
       'http_429',
     );
+    assert.equal(
+      classifyScrapeError(new ScrapeFailure('rate_limited')),
+      'http_429',
+    );
   });
 
   it('maps extraction misses to parse', () => {

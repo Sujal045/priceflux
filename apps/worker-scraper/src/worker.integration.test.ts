@@ -96,9 +96,64 @@ describe(
       return next;
     }
 
+    /**
+     * Stop this suite's worker (if any), then fail fast if another process
+     * (e.g. `pnpm dev:worker-scraper`) still owns scrape.jobs.
+     */
+    async function assertExclusiveScrapeJobs(): Promise<void> {
+      if (worker) {
+        await worker.stop();
+        worker = undefined;
+      }
+      const deadline = Date.now() + 2_000;
+      let consumerCount = -1;
+      while (Date.now() < deadline) {
+        const info = await publisher.channel.checkQueue(Queues.scrapeJobs);
+        consumerCount = info.consumerCount;
+        if (consumerCount === 0) return;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      assert.equal(
+        consumerCount,
+        0,
+        `scrape.jobs has ${consumerCount} consumer(s); stop pnpm dev:worker-scraper (and any other scrapers) before integration tests`,
+      );
+    }
+
+    type AmqpMsg = Exclude<
+      Awaited<ReturnType<typeof publisher.channel.get>>,
+      false
+    >;
+
+    async function waitForJobMessage(
+      queue: string,
+      jobId: string,
+      timeoutMs: number,
+    ): Promise<AmqpMsg> {
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        const candidate = await publisher.channel.get(queue, { noAck: false });
+        if (!candidate) {
+          await new Promise((r) => setTimeout(r, 50));
+          continue;
+        }
+        const candidateBody = JSON.parse(
+          candidate.content.toString('utf8'),
+        ) as { jobId?: string };
+        if (candidateBody.jobId !== jobId) {
+          // Stale message from a prior run — discard and keep looking.
+          publisher.channel.ack(candidate);
+          continue;
+        }
+        return candidate;
+      }
+      throw new Error(`timed out waiting for job ${jobId} on ${queue}`);
+    }
+
     it('scrapes a fixture URL and publishes results.ready', async () => {
       assert.ok(fixtureUrl);
       assert.ok(fetcher);
+      await assertExclusiveScrapeJobs();
 
       const job = ScrapeJobSchema.parse({
         jobId: randomUUID(),
@@ -118,6 +173,9 @@ describe(
             headless: true,
             navigationTimeoutMs: 15_000,
             metricsPort: 0,
+            stealth: false,
+            domainRateLimit: 0,
+            domainRateWindowSeconds: 60,
           },
           fetcher,
           log: {
@@ -137,18 +195,11 @@ describe(
         },
       });
 
-      const deadline = Date.now() + 20_000;
-      let resultMsg: Awaited<ReturnType<typeof publisher.channel.get>> =
-        false;
-      while (Date.now() < deadline) {
-        resultMsg = await publisher.channel.get(Queues.resultsNotify, {
-          noAck: false,
-        });
-        if (resultMsg) break;
-        await new Promise((r) => setTimeout(r, 100));
-      }
-
-      assert.ok(resultMsg, 'expected message on results.notify');
+      const resultMsg = await waitForJobMessage(
+        Queues.resultsNotify,
+        job.jobId,
+        20_000,
+      );
       const body = ScrapeResultSchema.parse(
         JSON.parse(resultMsg.content.toString('utf8')),
       );
@@ -171,6 +222,8 @@ describe(
     });
 
     it('schedules a scrape failure onto scrape.retry.30s', async () => {
+      await assertExclusiveScrapeJobs();
+
       const url = `https://shop.example/retry/${randomUUID()}`;
       const job = ScrapeJobSchema.parse({
         jobId: randomUUID(),
@@ -190,6 +243,9 @@ describe(
             headless: true,
             navigationTimeoutMs: 15_000,
             metricsPort: 0,
+            stealth: false,
+            domainRateLimit: 0,
+            domainRateWindowSeconds: 60,
           },
           log: {
             info: () => undefined,
@@ -211,17 +267,11 @@ describe(
         },
       });
 
-      const deadline = Date.now() + 10_000;
-      let retryMsg: Awaited<ReturnType<typeof publisher.channel.get>> = false;
-      while (Date.now() < deadline) {
-        retryMsg = await publisher.channel.get(Queues.scrapeRetry30s, {
-          noAck: false,
-        });
-        if (retryMsg) break;
-        await new Promise((r) => setTimeout(r, 50));
-      }
-
-      assert.ok(retryMsg, 'expected message on scrape.retry.30s');
+      const retryMsg = await waitForJobMessage(
+        Queues.scrapeRetry30s,
+        job.jobId,
+        10_000,
+      );
       const body = ScrapeJobSchema.parse(
         JSON.parse(retryMsg.content.toString('utf8')),
       );
@@ -233,6 +283,8 @@ describe(
     });
 
     it('parks a scrape failure on scrape.dead when attempts are exhausted', async () => {
+      await assertExclusiveScrapeJobs();
+
       const url = `https://shop.example/dead/${randomUUID()}`;
       const job = ScrapeJobSchema.parse({
         jobId: randomUUID(),
@@ -252,6 +304,9 @@ describe(
             headless: true,
             navigationTimeoutMs: 15_000,
             metricsPort: 0,
+            stealth: false,
+            domainRateLimit: 0,
+            domainRateWindowSeconds: 60,
           },
           log: {
             info: () => undefined,
@@ -273,17 +328,11 @@ describe(
         },
       });
 
-      const deadline = Date.now() + 10_000;
-      let deadMsg: Awaited<ReturnType<typeof publisher.channel.get>> = false;
-      while (Date.now() < deadline) {
-        deadMsg = await publisher.channel.get(Queues.scrapeDead, {
-          noAck: false,
-        });
-        if (deadMsg) break;
-        await new Promise((r) => setTimeout(r, 50));
-      }
-
-      assert.ok(deadMsg, 'expected message on scrape.dead');
+      const deadMsg = await waitForJobMessage(
+        Queues.scrapeDead,
+        job.jobId,
+        10_000,
+      );
       const body = ScrapeJobSchema.parse(
         JSON.parse(deadMsg.content.toString('utf8')),
       );

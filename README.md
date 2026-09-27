@@ -2,9 +2,9 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–14** are on `main`. Stage **15** (this branch / upcoming PR) adds Prometheus metrics + correlation ids. **Amazon-class sites still need anti-bot (stage 16).**
+**How far are we?** Stages **01–15** are on `main`. Stage **16** (this branch / upcoming PR) adds feature-flagged stealth/proxy/domain rate limits. **Still not a guarantee against Amazon-class bot walls.**
 
-**Operator guide:** see [docs/USAGE.md](docs/USAGE.md). **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md).
+**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md)
 
 ## Stack
 

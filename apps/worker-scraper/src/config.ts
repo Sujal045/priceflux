@@ -5,6 +5,21 @@ export type ScraperWorkerConfig = {
   navigationTimeoutMs: number;
   /** Prometheus scrape port; `0` disables the metrics HTTP server. */
   metricsPort: number;
+  /**
+   * Optional HTTP(S) proxy for Chromium (`http://user:pass@host:port`).
+   * Unset = direct connection (local fixtures).
+   */
+  proxyUrl?: string;
+  /**
+   * When true, launch via Patchright and apply stealth context defaults.
+   * Default false so local fixtures stay on plain Playwright.
+   */
+  stealth: boolean;
+  /**
+   * Max scrapes per domain per window. `0` disables Redis domain limiting.
+   */
+  domainRateLimit: number;
+  domainRateWindowSeconds: number;
 };
 
 const LOG_LEVELS = new Set([
@@ -26,6 +41,24 @@ function parseBoolean(raw: string, envName: string): boolean {
     return false;
   }
   throw new Error(`Invalid ${envName}: ${raw}`);
+}
+
+function parseOptionalProxyUrl(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return undefined;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(`Invalid SCRAPER_PROXY_URL: ${raw}`);
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(
+      `Invalid SCRAPER_PROXY_URL protocol (use http/https): ${raw}`,
+    );
+  }
+  return trimmed;
 }
 
 export function loadScraperWorkerConfig(
@@ -68,11 +101,39 @@ export function loadScraperWorkerConfig(
     throw new Error(`Invalid WORKER_SCRAPER_METRICS_PORT: ${metricsPortRaw}`);
   }
 
+  const stealth = parseBoolean(
+    env.SCRAPER_STEALTH ?? 'false',
+    'SCRAPER_STEALTH',
+  );
+
+  const proxyUrl = parseOptionalProxyUrl(env.SCRAPER_PROXY_URL);
+
+  const rateLimitRaw = env.SCRAPER_DOMAIN_RATE_LIMIT ?? '30';
+  const domainRateLimit = Number(rateLimitRaw);
+  if (!Number.isInteger(domainRateLimit) || domainRateLimit < 0) {
+    throw new Error(`Invalid SCRAPER_DOMAIN_RATE_LIMIT: ${rateLimitRaw}`);
+  }
+
+  const windowRaw = env.SCRAPER_DOMAIN_RATE_WINDOW_SECONDS ?? '60';
+  const domainRateWindowSeconds = Number(windowRaw);
+  if (
+    !Number.isInteger(domainRateWindowSeconds) ||
+    domainRateWindowSeconds <= 0
+  ) {
+    throw new Error(
+      `Invalid SCRAPER_DOMAIN_RATE_WINDOW_SECONDS: ${windowRaw}`,
+    );
+  }
+
   return {
     prefetch,
     logLevel: logLevelRaw as ScraperWorkerConfig['logLevel'],
     headless,
     navigationTimeoutMs,
     metricsPort,
+    stealth,
+    domainRateLimit,
+    domainRateWindowSeconds,
+    ...(proxyUrl !== undefined ? { proxyUrl } : {}),
   };
 }

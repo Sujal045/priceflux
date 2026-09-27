@@ -15,7 +15,9 @@ const PARSE_REASONS = new Set([
 export function classifyScrapeError(err: unknown): ErrorClass {
   if (err instanceof ScrapeFailure) {
     if (err.reason === 'http_403') return 'http_403';
-    if (err.reason === 'http_429') return 'http_429';
+    if (err.reason === 'http_429' || err.reason === 'rate_limited') {
+      return 'http_429';
+    }
     if (PARSE_REASONS.has(err.reason)) return 'parse';
     if (err.reason.startsWith('http_')) return 'unknown';
   }
