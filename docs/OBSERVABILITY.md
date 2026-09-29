@@ -28,7 +28,7 @@ curl -s http://127.0.0.1:9102/metrics | rg 'priceflux_alerts|priceflux_jobs'
 | `priceflux_http_request_duration_seconds` | histogram | method, route, status_code | API latency |
 | `priceflux_jobs_total` | counter | worker, outcome | Scraper / notifier job outcomes |
 | `priceflux_job_duration_seconds` | histogram | worker, outcome | Job latency |
-| `priceflux_alerts_total` | counter | outcome | Drop alerts emitted |
+| `priceflux_alerts_total` | counter | outcome | Drop alerts / email channel outcomes |
 | `priceflux_queue_messages` | gauge | queue | RabbitMQ ready depth (lag) |
 
 Default Node process metrics (`process_*`, `nodejs_*`) are also registered.
@@ -40,6 +40,17 @@ Default Node process metrics (`process_*`, `nodejs_*`) are also registered.
 ### Notifier `outcome` values
 
 `success` · `error`
+
+### Alert `outcome` values (`priceflux_alerts_total`)
+
+| outcome | Meaning |
+|---------|---------|
+| `emitted` | Full alert pipeline finished (after log → optional email → optional webhook) |
+| `email_sent` | SMTP send succeeded |
+| `email_failed` | SMTP send threw (job then nacks without requeue) |
+| `email_skipped` | No recipient email on the alert |
+
+Email setup: [EMAIL.md](EMAIL.md).
 
 ## Correlation ids
 
@@ -85,7 +96,7 @@ sum by (outcome) (rate(priceflux_jobs_total{worker="scraper"}[5m]))
 priceflux_queue_messages
 
 # Alert emission rate
-rate(priceflux_alerts_total[5m])
+sum by (outcome) (rate(priceflux_alerts_total[5m]))
 
 # API p95 latency
 histogram_quantile(0.95, sum by (le, route) (rate(priceflux_http_request_duration_seconds_bucket[5m])))

@@ -34,6 +34,7 @@ import {
   loadNotifierWorkerConfig,
   type NotifierWorkerConfig,
 } from './config.js';
+import { createEmailAlertEmitter } from './email.js';
 import { handleScrapeResult } from './handle.js';
 
 const LAGGED_QUEUES = [
@@ -123,6 +124,20 @@ export async function startNotifierWorker(
     options.onAlert ??
     composeAlertEmitters([
       createLogAlertEmitter(log),
+      ...(config.smtp
+        ? [
+            createEmailAlertEmitter(config.smtp, {
+              log,
+              metrics: {
+                sent: () => metrics.alertsTotal.inc({ outcome: 'email_sent' }),
+                failed: () =>
+                  metrics.alertsTotal.inc({ outcome: 'email_failed' }),
+                skipped: () =>
+                  metrics.alertsTotal.inc({ outcome: 'email_skipped' }),
+              },
+            }),
+          ]
+        : []),
       ...(config.webhookUrl
         ? [createWebhookAlertEmitter(config.webhookUrl)]
         : []),
@@ -186,6 +201,7 @@ export async function startNotifierWorker(
       queue: Queues.resultsNotify,
       prefetch: config.prefetch,
       consumerTag,
+      smtp: Boolean(config.smtp),
       webhook: Boolean(config.webhookUrl),
     },
     'notifier worker consuming',

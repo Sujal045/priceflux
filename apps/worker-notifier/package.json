@@ -9,6 +9,7 @@
     "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
     "test": "tsx --test src/*.test.ts src/**/*.test.ts",
     "test:integration": "PRICEFLUX_NOTIFIER_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/*.test.ts src/**/*.test.ts",
+    "test:mailpit": "PRICEFLUX_MAILPIT_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/email.mailpit.test.ts",
     "dev": "node --watch --import tsx --env-file=../../.env src/index.ts",
     "start": "node --env-file=../../.env dist/index.js",
     "clean": "rm -rf dist"
@@ -19,10 +20,12 @@
     "@priceflux/observability": "workspace:^",
     "@priceflux/shared": "workspace:*",
     "amqplib": "^0.10.5",
-    "drizzle-orm": "^0.40.0"
+    "drizzle-orm": "^0.40.0",
+    "nodemailer": "^10.0.12"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",
+    "@types/nodemailer": "^8.0.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

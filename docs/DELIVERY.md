@@ -7,10 +7,9 @@ Last updated: 2026-09-29
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 16** on branch `feat/16-antibot` — proxy config, Patchright stealth flag, Redis per-domain rate limits.
+**Stage 17** on branch `feat/17-email-alerts` — SMTP email drop alerts + Mailpit.
 
-Pushed to `origin/feat/16-antibot`. **Merge PR 16 into `main` before starting stage 17.**  
-If stage 16 is already merged: clear this WIP and start **17** (`feat/17-email-alerts`). See brief below.
+Code ready for user commit / PR; **do not start stage 18** until this merges and the user asks.
 
 ## Workflow
 
@@ -39,17 +38,16 @@ If stage 16 is already merged: clear this WIP and start **17** (`feat/17-email-a
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
 | 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 — log + optional webhook only |
 | 15 | Observability baseline | `feat/15-observability` | **done** | Merged via PR #14 |
-| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **in progress** | Merge before 17 |
-| 17 | Email drop alerts | `feat/17-email-alerts` | pending | SMTP + local Mailpit; see brief |
-| 18 | Prod hardening docs | `feat/18-prod-docs` | pending | Quorum, HPA, DLX runbooks (was 17) |
+| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **done** | Merged via PR #15–#17 |
+| 17 | Email drop alerts | `feat/17-email-alerts` | **in progress** | SMTP + Mailpit; awaiting commit/PR |
+| 18 | Prod hardening docs | `feat/18-prod-docs` | pending | Quorum, HPA, DLX runbooks |
 | — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR; Odoo variant pages |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-1. Merge **PR 16** (`feat/16-antibot`) → `main`.
-2. Start **PR 17** (`feat/17-email-alerts`) when the user asks — real email for threshold alerts.
-3. After 17: **PR 18** prod hardening docs (when asked).
+1. User commits + opens **PR 17** (`feat/17-email-alerts` → `main`).
+2. After merge: start **PR 18** (`feat/18-prod-docs`) when the user asks.
 
 ---
 
@@ -88,10 +86,10 @@ If stage 16 is already merged: clear this WIP and start **17** (`feat/17-email-a
 
 ### Acceptance checklist
 
-- [ ] With Mailpit up and SMTP env set, a successful scrape under threshold delivers a visible message in Mailpit UI.
-- [ ] Without SMTP env, notifier still works (log ± webhook only).
-- [ ] Unit tests cover template/emitter; integration optional but documented.
-- [ ] USAGE + EMAIL docs updated; DELIVERY next set to 18 after handoff.
+- [x] With Mailpit up and SMTP env set, a successful scrape under threshold delivers a visible message in Mailpit UI.
+- [x] Without SMTP env, notifier still works (log ± webhook only).
+- [x] Unit tests cover template/emitter; integration optional but documented.
+- [x] USAGE + EMAIL docs updated; DELIVERY next set to 18 after handoff.
 
 ## How to update this file
 
