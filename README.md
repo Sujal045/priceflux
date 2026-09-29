@@ -2,9 +2,9 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–15** are on `main`. Stage **16** (`feat/16-antibot`) = anti-bot flags (merge via PR). **Next:** stage **17** email drop alerts, then **18** prod docs. See [docs/DELIVERY.md](docs/DELIVERY.md).
+**How far are we?** Stages **01–16** are on `main`. Stage **17** (`feat/17-email-alerts`) = SMTP email + Mailpit. **Next after merge:** stage **18** prod docs. See [docs/DELIVERY.md](docs/DELIVERY.md).
 
-**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md)
+**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
 
 ## Stack
 
@@ -27,7 +27,7 @@ packages/
   db/                  Postgres schema / migrations
   cache/               Redis helpers
   scrape-core/         Extraction (JSON-LD, etc.)
-infra/                 Docker Compose (Postgres, Redis, RabbitMQ)
+infra/                 Docker Compose (Postgres, Redis, RabbitMQ, Mailpit)
 ```
 
 ## Prerequisites

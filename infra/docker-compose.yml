@@ -59,6 +59,28 @@ services:
       retries: 10
       start_period: 20s
 
+  # Local SMTP catcher for notifier email alerts (stage 17). Web UI: :8025
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: priceflux-mailpit
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--spider',
+          '-q',
+          'http://127.0.0.1:8025/api/v1/info',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
 volumes:
   priceflux_postgres_data:
   priceflux_redis_data:
