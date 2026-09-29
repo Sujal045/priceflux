@@ -118,4 +118,8 @@ pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chr
 
 ## Roadmap after 16
 
-1. **17** — prod hardening docs (quorum queues, HPA, dead-letter runbooks)
+1. **17** — email drop alerts (SMTP + local Mailpit; log/webhook kept)
+2. **18** — prod hardening docs (quorum queues, HPA, dead-letter runbooks)
+3. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)
+
+Stage briefs live in [DELIVERY.md](DELIVERY.md).

@@ -3,13 +3,14 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-09-27
+Last updated: 2026-09-29
 
 ## Current WIP (read this first in a new chat)
 
 **Stage 16** on branch `feat/16-antibot` — proxy config, Patchright stealth flag, Redis per-domain rate limits.
 
-Pushed to `origin/feat/16-antibot`. Open/merge the PR into `main`, then mark stage 16 **done**. See [docs/ANTIBOT.md](ANTIBOT.md).
+Pushed to `origin/feat/16-antibot`. **Merge PR 16 into `main` before starting stage 17.**  
+If stage 16 is already merged: clear this WIP and start **17** (`feat/17-email-alerts`). See brief below.
 
 ## Workflow
 
@@ -36,15 +37,61 @@ Pushed to `origin/feat/16-antibot`. Open/merge the PR into `main`, then mark sta
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **done** | Merged via PR #10 |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **done** | Merged via PR #11 |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
-| 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 |
+| 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 — log + optional webhook only |
 | 15 | Observability baseline | `feat/15-observability` | **done** | Merged via PR #14 |
-| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **in progress** | Pushed; awaiting PR merge |
-| 17 | Prod hardening docs | `feat/17-prod-docs` | pending | |
+| 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **in progress** | Merge before 17 |
+| 17 | Email drop alerts | `feat/17-email-alerts` | pending | SMTP + local Mailpit; see brief |
+| 18 | Prod hardening docs | `feat/18-prod-docs` | pending | Quorum, HPA, DLX runbooks (was 17) |
+| — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR; Odoo variant pages |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-After **PR 16** merges: start **PR 17** (`feat/17-prod-docs`) when the user asks — quorum notes, HPA, dead-letter runbooks.
+1. Merge **PR 16** (`feat/16-antibot`) → `main`.
+2. Start **PR 17** (`feat/17-email-alerts`) when the user asks — real email for threshold alerts.
+3. After 17: **PR 18** prod hardening docs (when asked).
+
+---
+
+## Stage 17 brief — email drop alerts
+
+**Goal:** When `price <= threshold`, send a real email to the watch owner’s address (already on `users.email` / `PriceAlert.email`), in addition to the existing log stub (and optional webhook).
+
+### In scope
+
+- SMTP-based sender (e.g. `nodemailer`) behind the existing `AlertEmitter` interface in `apps/worker-notifier/src/alert.ts`.
+- Env-driven config (extend `loadNotifierWorkerConfig`): host, port, user, pass, `from`, TLS flags; **off / no-op when unset** so local fixtures keep working without mail.
+- Local inbox for dev: add **Mailpit** (or Mailhog) to `infra/docker-compose.yml` + `.env.example` ports; document Web UI URL.
+- Keep composing emitters: **log always** → **email if configured** → **webhook if `NOTIFIER_WEBHOOK_URL` set**.
+- Clear subject/body (plaintext + simple HTML ok): product title/url, price, currency, threshold, scrapedAt.
+- Unit tests with a mock transport; optional integration test against Mailpit when a flag is set (same pattern as other `PRICEFLUX_*_INTEGRATION=1` tests).
+- Metrics: count email send success/failure (extend `priceflux_alerts_total` labels or add a small email counter — stay consistent with `docs/OBSERVABILITY.md`).
+- Docs: `docs/USAGE.md` + short `docs/EMAIL.md` (setup Mailpit, env table, how to verify).
+- Update `docs/DELIVERY.md` WIP / status for stage 17.
+
+### Out of scope (do not mix into this PR)
+
+- Prod hardening docs (stage 18).
+- `ProductGroup` / `hasVariant` extractor work (backlog).
+- Web UI, user auth, email verification / unsubscribe flows.
+- Marketing digests, SMS, push.
+- Changing scrape / Rabbit topology / DB schema unless strictly required (prefer no migration; email uses existing `users.email`).
+
+### Design constraints / do not miss
+
+- **Idempotency:** duplicate `jobId` must still not re-send mail (existing `handleScrapeResult` behavior).
+- **Missing email:** skip email emitter gracefully; still log; do not crash the consumer.
+- **Send failures:** decide explicitly — prefer: log error, increment failure metric, **nack/requeue or retry policy** that does not double-insert `price_history` (history insert already happened before alert today — read `handle.ts` carefully; may need “alert after insert” ordering preserved with safe retry or outbox-lite). Document the chosen behavior in `docs/EMAIL.md`.
+- **Secrets:** SMTP password only via `.env`; never commit real credentials.
+- **One concern per PR;** tests in the same PR as the behavior.
+- Branch: `feat/17-email-alerts` from updated `main` after 16 merges.
+
+### Acceptance checklist
+
+- [ ] With Mailpit up and SMTP env set, a successful scrape under threshold delivers a visible message in Mailpit UI.
+- [ ] Without SMTP env, notifier still works (log ± webhook only).
+- [ ] Unit tests cover template/emitter; integration optional but documented.
+- [ ] USAGE + EMAIL docs updated; DELIVERY next set to 18 after handoff.
 
 ## How to update this file
 
