@@ -40,6 +40,8 @@ Worker failures publish explicitly to `scrape.dlx` (retry / dead) with confirms,
 pnpm replay:dead -- --limit 5
 ```
 
+Production hardening (quorum queues, HPA, full DLX runbook): [docs/PROD.md](../docs/PROD.md).
+
 ```bash
 pnpm topology:assert
 ```

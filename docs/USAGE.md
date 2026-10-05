@@ -1,12 +1,12 @@
-# Priceflux usage guide (through stage 17)
+# Priceflux usage guide (through stage 18)
 
-This document describes **what works today** after stages **01–17**, and how to run/test it locally.
+This document describes **what works today** after stages **01–18**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email** via SMTP/Mailpit when configured. Anti-bot flags stay off by default. Amazon-class sites may still fail.
+> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email** via SMTP/Mailpit. Anti-bot flags stay off by default. **Prod ops guidance** (quorum, HPA, DLX) lives in [PROD.md](PROD.md) — local Compose is unchanged.
 
 ---
 
-## What is completed (01–17)
+## What is completed (01–18)
 
 | Stage | Capability |
 |-------|------------|
@@ -17,21 +17,23 @@ This document describes **what works today** after stages **01–17**, and how t
 | 15 | Prometheus metrics + correlation ids |
 | 16 | Feature-flagged stealth (Patchright), proxy URL, Redis domain rate limits |
 | 17 | SMTP email drop alerts + local Mailpit inbox |
+| 18 | Prod hardening **docs** (quorum / HPA / DLX runbooks) |
 
-### Still missing
+### Still missing / backlog
 
-| Later | Missing |
-|-------|---------|
-| 18 | Prod hardening docs (quorum, HPA, runbooks) |
-| — | Web UI (v2) |
+| Item | Notes |
+|------|-------|
+| Scheduled re-scrape | No cron; recheck only via `POST /watches` (after Redis dedupe window) |
+| ProductGroup / hasVariant JSON-LD | Variant pages |
+| Web UI | Deferred to v2 |
 
-Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md).
+Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
 
 ---
 
 ## Realistic testing (read this)
 
-| Scenario | Expectation after stage 17 |
+| Scenario | Expectation after stage 17+ |
 |----------|----------------------------|
 | Local HTML with Product JSON-LD (fixture / static server) | **Works end-to-end**: history row + alert if `price <= threshold` |
 | Same + Mailpit SMTP env | **Email** appears in `http://127.0.0.1:8025` |
@@ -105,6 +107,8 @@ Bad URLs or blocked sites → scraper retries (`scrape.retry.*`) then `scrape.de
 pnpm replay:dead -- --limit 5
 ```
 
+Full ops detail: [PROD.md](PROD.md#dlx--dead-letter-runbook).
+
 ---
 
 ## Automated tests
@@ -122,9 +126,10 @@ pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chr
 
 ---
 
-## Roadmap after 17
+## Roadmap after 18
 
-1. **18** — prod hardening docs (quorum queues, HPA, dead-letter runbooks)
-2. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)
+1. **Backlog** — scheduled re-scrape / watch poller  
+2. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)  
+3. **v2** — Web UI  
 
 Stage briefs live in [DELIVERY.md](DELIVERY.md).
