@@ -109,4 +109,6 @@ histogram_quantile(0.95, sum by (le, route) (rate(priceflux_http_request_duratio
 3. `POST /watches` once and confirm `priceflux_jobs_total` / queue gauges move  
 4. Confirm `x-request-id` round-trips on `/healthz`
 
+For prod alert ideas and scaling signals, see [PROD.md](PROD.md).
+
 OpenTelemetry export is **not** wired in this stage; Prometheus text is the v1 baseline.

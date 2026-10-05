@@ -2,9 +2,9 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–16** are on `main`. Stage **17** (`feat/17-email-alerts`) = SMTP email + Mailpit. **Next after merge:** stage **18** prod docs. See [docs/DELIVERY.md](docs/DELIVERY.md).
+**How far are we?** Stages **01–17** are on `main`. Stage **18** (`feat/18-prod-docs`) = prod hardening docs. After merge: backlog (scheduler, ProductGroup) or v2 UI. See [docs/DELIVERY.md](docs/DELIVERY.md).
 
-**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
+**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Prod:** [docs/PROD.md](docs/PROD.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
 
 ## Stack
 

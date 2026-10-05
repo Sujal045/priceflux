@@ -3,13 +3,13 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-09-29
+Last updated: 2026-10-05
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 17** on branch `feat/17-email-alerts` — SMTP email drop alerts + Mailpit.
+**Stage 18** on branch `feat/18-prod-docs` — prod hardening docs (quorum, HPA, DLX runbooks).
 
-Code ready for user commit / PR; **do not start stage 18** until this merges and the user asks.
+Docs ready for user commit / PR. **Do not start backlog work** until this merges and the user asks.
 
 ## Workflow
 
@@ -39,57 +39,43 @@ Code ready for user commit / PR; **do not start stage 18** until this merges and
 | 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 — log + optional webhook only |
 | 15 | Observability baseline | `feat/15-observability` | **done** | Merged via PR #14 |
 | 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **done** | Merged via PR #15–#17 |
-| 17 | Email drop alerts | `feat/17-email-alerts` | **in progress** | SMTP + Mailpit; awaiting commit/PR |
-| 18 | Prod hardening docs | `feat/18-prod-docs` | pending | Quorum, HPA, DLX runbooks |
+| 17 | Email drop alerts | `feat/17-email-alerts` | **done** | Merged via PR #18 |
+| 18 | Prod hardening docs | `feat/18-prod-docs` | **in progress** | Docs only; awaiting commit/PR |
+| — | Scheduled re-scrape / watch poller | — | **backlog** | No cron today; POST /watches only |
 | — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR; Odoo variant pages |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-1. User commits + opens **PR 17** (`feat/17-email-alerts` → `main`).
-2. After merge: start **PR 18** (`feat/18-prod-docs`) when the user asks.
+1. User commits + opens **PR 18** (`feat/18-prod-docs` → `main`).
+2. After merge: pick backlog (scheduler, ProductGroup, or v2 UI) when the user asks.
 
 ---
 
-## Stage 17 brief — email drop alerts
+## Stage 18 brief — prod hardening docs
 
-**Goal:** When `price <= threshold`, send a real email to the watch owner’s address (already on `users.email` / `PriceAlert.email`), in addition to the existing log stub (and optional webhook).
+**Goal:** Document how to harden Priceflux for production: quorum queues, scaling/HPA, and DLX / dead-letter runbooks. No application feature work in this PR.
 
 ### In scope
 
-- SMTP-based sender (e.g. `nodemailer`) behind the existing `AlertEmitter` interface in `apps/worker-notifier/src/alert.ts`.
-- Env-driven config (extend `loadNotifierWorkerConfig`): host, port, user, pass, `from`, TLS flags; **off / no-op when unset** so local fixtures keep working without mail.
-- Local inbox for dev: add **Mailpit** (or Mailhog) to `infra/docker-compose.yml` + `.env.example` ports; document Web UI URL.
-- Keep composing emitters: **log always** → **email if configured** → **webhook if `NOTIFIER_WEBHOOK_URL` set**.
-- Clear subject/body (plaintext + simple HTML ok): product title/url, price, currency, threshold, scrapedAt.
-- Unit tests with a mock transport; optional integration test against Mailpit when a flag is set (same pattern as other `PRICEFLUX_*_INTEGRATION=1` tests).
-- Metrics: count email send success/failure (extend `priceflux_alerts_total` labels or add a small email counter — stay consistent with `docs/OBSERVABILITY.md`).
-- Docs: `docs/USAGE.md` + short `docs/EMAIL.md` (setup Mailpit, env table, how to verify).
-- Update `docs/DELIVERY.md` WIP / status for stage 17.
+- `docs/PROD.md` covering:
+  - Quorum vs local classic queues; migration caveats (TTL retries, drain/recreate).
+  - Scaling guidance for API / scraper / notifier (prefetch, Chromium memory, shared Redis rate limits).
+  - Dead-letter runbook: retry tiers, inspect `scrape.dead`, `pnpm replay:dead`, when not to replay; pointer to email failure semantics.
+  - Secrets / observability alert starters.
+- Update `docs/USAGE.md`, `README.md`, `docs/DELIVERY.md`; link from `infra/README.md`.
 
-### Out of scope (do not mix into this PR)
+### Out of scope
 
-- Prod hardening docs (stage 18).
-- `ProductGroup` / `hasVariant` extractor work (backlog).
-- Web UI, user auth, email verification / unsubscribe flows.
-- Marketing digests, SMS, push.
-- Changing scrape / Rabbit topology / DB schema unless strictly required (prefer no migration; email uses existing `users.email`).
-
-### Design constraints / do not miss
-
-- **Idempotency:** duplicate `jobId` must still not re-send mail (existing `handleScrapeResult` behavior).
-- **Missing email:** skip email emitter gracefully; still log; do not crash the consumer.
-- **Send failures:** decide explicitly — prefer: log error, increment failure metric, **nack/requeue or retry policy** that does not double-insert `price_history` (history insert already happened before alert today — read `handle.ts` carefully; may need “alert after insert” ordering preserved with safe retry or outbox-lite). Document the chosen behavior in `docs/EMAIL.md`.
-- **Secrets:** SMTP password only via `.env`; never commit real credentials.
-- **One concern per PR;** tests in the same PR as the behavior.
-- Branch: `feat/17-email-alerts` from updated `main` after 16 merges.
+- Changing `definitions.json` to quorum in Compose (keep local DX).
+- Implementing a watch scheduler / cron.
+- ProductGroup extractor, Web UI, K8s manifests as code (describe patterns only).
 
 ### Acceptance checklist
 
-- [x] With Mailpit up and SMTP env set, a successful scrape under threshold delivers a visible message in Mailpit UI.
-- [x] Without SMTP env, notifier still works (log ± webhook only).
-- [x] Unit tests cover template/emitter; integration optional but documented.
-- [x] USAGE + EMAIL docs updated; DELIVERY next set to 18 after handoff.
+- [x] `docs/PROD.md` exists with quorum + HPA + DLX runbooks.
+- [x] Local topology unchanged; docs say prod cutover is separate.
+- [x] DELIVERY WIP / Next updated for stage 18 handoff.
 
 ## How to update this file
 
