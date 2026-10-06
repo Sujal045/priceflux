@@ -1,19 +1,9 @@
-import { randomUUID } from 'node:crypto';
-
 import { and, eq } from 'drizzle-orm';
 
-import {
-  tryClaimUrlDedupe,
-  type PricefluxRedis,
-} from '@priceflux/cache';
+import { type PricefluxRedis } from '@priceflux/cache';
 import { users, watches, type Database, type Watch } from '@priceflux/db';
-import { publishScrapeJob, type RabbitConnection } from '@priceflux/mq';
-import {
-  DEFAULT_MAX_ATTEMPTS,
-  ScrapeJobSchema,
-  canonicalizeUrl,
-  dedupeKeyForUrl,
-} from '@priceflux/shared';
+import { tryEnqueueWatchScrape, type RabbitConnection } from '@priceflux/mq';
+import { canonicalizeUrl, dedupeKeyForUrl } from '@priceflux/shared';
 
 import type { CreateWatchBody, UpdateWatchBody } from '../routes/watches-schemas.js';
 
@@ -132,43 +122,36 @@ export async function createWatchAndMaybeEnqueue(input: {
     created = true;
   }
 
-  const claim = await tryClaimUrlDedupe(redis, dedupeKey);
-  if (!claim.claimed) {
+  const enqueue = await tryEnqueueWatchScrape({
+    redis,
+    rabbit,
+    watch: {
+      watchId: watchRow.id,
+      userId: user.id,
+      url: watchRow.url,
+      canonicalUrl: watchRow.canonicalUrl,
+      dedupeKey: watchRow.dedupeKey,
+      site: watchRow.site,
+      threshold:
+        watchRow.threshold === null ? null : Number(watchRow.threshold),
+      currency: watchRow.currency,
+    },
+  });
+
+  if (!enqueue.scrapeQueued) {
     return {
       watch: toDto(watchRow),
       created,
       scrapeQueued: false,
-      dedupeTtlSeconds: claim.ttlSeconds,
+      dedupeTtlSeconds: enqueue.dedupeTtlSeconds,
     };
   }
-
-  const job = ScrapeJobSchema.parse({
-    jobId: randomUUID(),
-    url: body.url,
-    canonicalUrl,
-    dedupeKey,
-    userId: user.id,
-    watchId: watchRow.id,
-    site,
-    ...(body.threshold !== undefined ? { threshold: body.threshold } : {}),
-    ...(body.currency !== undefined ? { currency: body.currency } : {}),
-    requestedAt: new Date().toISOString(),
-  });
-
-  await publishScrapeJob(rabbit.channel, {
-    job,
-    headers: {
-      'x-attempt': 1,
-      'x-max-attempts': DEFAULT_MAX_ATTEMPTS,
-      'x-dedupe-key': dedupeKey,
-    },
-  });
 
   return {
     watch: toDto(watchRow),
     created,
     scrapeQueued: true,
-    jobId: job.jobId,
+    jobId: enqueue.jobId,
   };
 }
 

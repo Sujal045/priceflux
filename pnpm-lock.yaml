@@ -107,6 +107,34 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
+  apps/worker-scheduler:
+    dependencies:
+      '@priceflux/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
+      '@priceflux/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@priceflux/mq':
+        specifier: workspace:*
+        version: link:../../packages/mq
+      '@priceflux/observability':
+        specifier: workspace:^
+        version: link:../../packages/observability
+      '@priceflux/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      drizzle-orm:
+        specifier: ^0.40.0
+        version: 0.40.1(@opentelemetry/api@1.9.1)(gel@2.2.1)(postgres@3.4.9)
+    devDependencies:
+      tsx:
+        specifier: ^4.19.3
+        version: 4.23.15
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   apps/worker-scraper:
     dependencies:
       '@priceflux/cache':
@@ -187,6 +215,9 @@ importers:
 
   packages/mq:
     dependencies:
+      '@priceflux/cache':
+        specifier: workspace:*
+        version: link:../cache
       '@priceflux/shared':
         specifier: workspace:*
         version: link:../shared

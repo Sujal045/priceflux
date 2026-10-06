@@ -7,9 +7,9 @@ Last updated: 2026-10-05
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 18** on branch `feat/18-prod-docs` — prod hardening docs (quorum, HPA, DLX runbooks).
+**Stage 19** on branch `feat/19-scheduled-rescrape` — periodic watch poller / scheduler worker.
 
-Docs ready for user commit / PR. **Do not start backlog work** until this merges and the user asks.
+Code ready for user commit / PR. **Do not start backlog items** until this merges and the user asks.
 
 ## Workflow
 
@@ -36,49 +36,49 @@ Docs ready for user commit / PR. **Do not start backlog work** until this merges
 | 11 | `scrape-core` JSON-LD extractor | `feat/11-jsonld-extractor` | **done** | Merged via PR #10 |
 | 12 | Playwright happy path → results | `feat/12-scrape-happy-path` | **done** | Merged via PR #11 |
 | 13 | DLX retries + dead letter | `feat/13-dlx-retries` | **done** | Merged via PR #12 |
-| 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 — log + optional webhook only |
+| 14 | Notifier + price history | `feat/14-notifier` | **done** | Merged via PR #13 |
 | 15 | Observability baseline | `feat/15-observability` | **done** | Merged via PR #14 |
 | 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **done** | Merged via PR #15–#17 |
 | 17 | Email drop alerts | `feat/17-email-alerts` | **done** | Merged via PR #18 |
-| 18 | Prod hardening docs | `feat/18-prod-docs` | **in progress** | Docs only; awaiting commit/PR |
-| — | Scheduled re-scrape / watch poller | — | **backlog** | No cron today; POST /watches only |
-| — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR; Odoo variant pages |
+| 18 | Prod hardening docs | `feat/18-prod-docs` | **done** | Merged via PR #19 |
+| 19 | Scheduled re-scrape | `feat/19-scheduled-rescrape` | **in progress** | Scheduler worker; awaiting commit/PR |
+| — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR |
 | — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-1. User commits + opens **PR 18** (`feat/18-prod-docs` → `main`).
-2. After merge: pick backlog (scheduler, ProductGroup, or v2 UI) when the user asks.
+1. User commits + opens **PR 19** (`feat/19-scheduled-rescrape` → `main`).
+2. After merge: backlog (ProductGroup) or v2 UI when the user asks.
 
 ---
 
-## Stage 18 brief — prod hardening docs
+## Stage 19 brief — scheduled re-scrape
 
-**Goal:** Document how to harden Priceflux for production: quorum queues, scaling/HPA, and DLX / dead-letter runbooks. No application feature work in this PR.
+**Goal:** Active watches are re-enqueued on an interval without calling `POST /watches` again.
 
 ### In scope
 
-- `docs/PROD.md` covering:
-  - Quorum vs local classic queues; migration caveats (TTL retries, drain/recreate).
-  - Scaling guidance for API / scraper / notifier (prefetch, Chromium memory, shared Redis rate limits).
-  - Dead-letter runbook: retry tiers, inspect `scrape.dead`, `pnpm replay:dead`, when not to replay; pointer to email failure semantics.
-  - Secrets / observability alert starters.
-- Update `docs/USAGE.md`, `README.md`, `docs/DELIVERY.md`; link from `infra/README.md`.
+- `apps/worker-scheduler`: poll DB, enqueue due watches via shared `tryEnqueueWatchScrape`.
+- Extract enqueue helper to `@priceflux/mq`; refactor API to use it.
+- Due logic: `max(price_history.scraped_at)` or `watch.created_at` + `SCHEDULER_WATCH_INTERVAL_SECONDS`.
+- Env: poll interval, watch interval, metrics port `:9103`.
+- Unit + optional integration test; `docs/SCHEDULER.md`; update USAGE / DELIVERY / OBSERVABILITY.
 
 ### Out of scope
 
-- Changing `definitions.json` to quorum in Compose (keep local DX).
-- Implementing a watch scheduler / cron.
-- ProductGroup extractor, Web UI, K8s manifests as code (describe patterns only).
+- Per-watch custom intervals (schema change).
+- Cron syntax / external schedulers (simple interval only).
+- ProductGroup, Web UI.
 
 ### Acceptance checklist
 
-- [x] `docs/PROD.md` exists with quorum + HPA + DLX runbooks.
-- [x] Local topology unchanged; docs say prod cutover is separate.
-- [x] DELIVERY WIP / Next updated for stage 18 handoff.
+- [x] Scheduler enqueues due active watches; skips inactive and recently scraped.
+- [x] Redis URL dedupe still applies.
+- [x] API create-watch path unchanged behavior via shared enqueue.
+- [x] Docs + env example updated.
 
 ## How to update this file
 
 When a stage merges to `main`: set its status to `done`, clear “in progress”, clear or rewrite **Current WIP**, set **Next** to the following stage number.  
-When starting a stage: set status to `in progress`, record the branch name, and fill **Current WIP** (including whether code is still uncommitted).  
+When starting a stage: set status to `in progress`, record the branch name, and fill **Current WIP**.  
 When stage code is finished but awaiting user commit/PR: keep status `in progress` and note that in **Current WIP**.

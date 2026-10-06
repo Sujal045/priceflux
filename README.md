@@ -2,15 +2,15 @@
 
 Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
 
-**How far are we?** Stages **01–17** are on `main`. Stage **18** (`feat/18-prod-docs`) = prod hardening docs. After merge: backlog (scheduler, ProductGroup) or v2 UI. See [docs/DELIVERY.md](docs/DELIVERY.md).
+**How far are we?** Stages **01–18** are on `main`. Stage **19** (`feat/19-scheduled-rescrape`) = scheduler worker. See [docs/DELIVERY.md](docs/DELIVERY.md).
 
-**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Prod:** [docs/PROD.md](docs/PROD.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Anti-bot:** [docs/ANTIBOT.md](docs/ANTIBOT.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
+**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Scheduler:** [docs/SCHEDULER.md](docs/SCHEDULER.md) · **Prod:** [docs/PROD.md](docs/PROD.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
 
 ## Stack
 
 - **Language:** TypeScript / Node.js
 - **API:** Fastify (`apps/api`)
-- **Workers:** Playwright scrapers + notification consumer
+- **Workers:** Playwright scrapers + notifier + scheduler
 - **Broker:** RabbitMQ
 - **Data:** PostgreSQL + Redis
 
@@ -21,6 +21,7 @@ apps/
   api/                 Fastify HTTP API
   worker-scraper/      Scraping workers
   worker-notifier/     Price alerts / history writer
+  worker-scheduler/    Periodic re-scrape for active watches
 packages/
   shared/              Shared types and Zod contracts
   mq/                  RabbitMQ helpers
@@ -75,7 +76,9 @@ pnpm topology:assert
 pnpm db:migrate
 pnpm dev:worker-scraper    # terminal B
 pnpm dev:worker-notifier   # terminal C
+pnpm dev:worker-scheduler  # terminal D
 # POST /watches → scrape → price_history (+ alert if price <= threshold)
+# scheduler re-enqueues due watches on an interval (see docs/SCHEDULER.md)
 ```
 
 See [infra/README.md](infra/README.md) for ports, topology, and teardown.

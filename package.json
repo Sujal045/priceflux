@@ -20,6 +20,7 @@
     "dev:api": "pnpm --filter @priceflux/api dev",
     "dev:worker-scraper": "pnpm --filter @priceflux/worker-scraper dev",
     "dev:worker-notifier": "pnpm --filter @priceflux/worker-notifier dev",
+    "dev:worker-scheduler": "pnpm --filter @priceflux/worker-scheduler dev",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

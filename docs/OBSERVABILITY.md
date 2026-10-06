@@ -11,6 +11,7 @@ endpoints with `curl` or point Prometheus at them.
 | API | `http://127.0.0.1:3000/metrics` | Same server as `/healthz` |
 | Scraper worker | `http://127.0.0.1:9101/metrics` | `WORKER_SCRAPER_METRICS_PORT` (set `0` to disable) |
 | Notifier worker | `http://127.0.0.1:9102/metrics` | `WORKER_NOTIFIER_METRICS_PORT` (set `0` to disable) |
+| Scheduler worker | `http://127.0.0.1:9103/metrics` | `WORKER_SCHEDULER_METRICS_PORT` (set `0` to disable) |
 
 Workers also expose `GET /healthz` on their metrics port.
 
@@ -40,6 +41,17 @@ Default Node process metrics (`process_*`, `nodejs_*`) are also registered.
 ### Notifier `outcome` values
 
 `success` · `error`
+
+### Scheduler `outcome` values
+
+| outcome | Meaning |
+|---------|---------|
+| `enqueued` | Scrape job published for a due watch |
+| `skipped_dedupe` | Watch due but Redis URL dedupe blocked |
+| `enqueue_error` | Failed to enqueue one watch |
+| `success` / `partial` / `error` | Whole scheduler tick |
+
+See [SCHEDULER.md](SCHEDULER.md).
 
 ### Alert `outcome` values (`priceflux_alerts_total`)
 
