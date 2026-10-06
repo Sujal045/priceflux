@@ -19,7 +19,9 @@ Related: [USAGE.md](USAGE.md) · [OBSERVABILITY.md](OBSERVABILITY.md) · [EMAIL.
 | Metrics | Prometheus text on `:3000` / `:9101` / `:9102` | Scrape + alert on lag / dead depth / error rate |
 | Email | Optional Mailpit / SMTP | Real SMTP; monitor `email_failed` |
 
-v1 still has **no scheduled re-scrape** — watches only scrape when `POST /watches` enqueues (plus failure retries). Plan capacity around enqueue rate, not “always-on polling.”
+v1 includes a **scheduler worker** (stage 19) that re-enqueues active watches on
+`SCHEDULER_WATCH_INTERVAL_SECONDS`. Run **one** scheduler replica; scale scrapers
+for throughput. See [SCHEDULER.md](SCHEDULER.md).
 
 ---
 

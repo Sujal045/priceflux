@@ -12,3 +12,8 @@ export {
   type PublishScrapeJobInput,
   type PublishScrapeFailureInput,
 } from './publish.js';
+export {
+  tryEnqueueWatchScrape,
+  type EnqueueWatchScrapeResult,
+  type WatchEnqueueInput,
+} from './enqueue-watch.js';

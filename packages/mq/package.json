@@ -21,6 +21,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@priceflux/cache": "workspace:*",
     "@priceflux/shared": "workspace:*",
     "amqplib": "^0.10.5"
   },

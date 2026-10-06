@@ -1,0 +1,28 @@
+{
+  "name": "@priceflux/worker-scheduler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint --config ../../eslint.config.js src --max-warnings=0",
+    "test": "tsx --test src/*.test.ts src/**/*.test.ts",
+    "test:integration": "PRICEFLUX_SCHEDULER_INTEGRATION=1 node --env-file=../../.env --import tsx --test src/*.test.ts src/**/*.test.ts",
+    "dev": "node --watch --import tsx --env-file=../../.env src/index.ts",
+    "start": "node --env-file=../../.env dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@priceflux/cache": "workspace:*",
+    "@priceflux/db": "workspace:*",
+    "@priceflux/mq": "workspace:*",
+    "@priceflux/observability": "workspace:^",
+    "@priceflux/shared": "workspace:*",
+    "drizzle-orm": "^0.40.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

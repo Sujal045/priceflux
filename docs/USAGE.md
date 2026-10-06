@@ -1,12 +1,12 @@
-# Priceflux usage guide (through stage 18)
+# Priceflux usage guide (through stage 19)
 
-This document describes **what works today** after stages **01–18**, and how to run/test it locally.
+This document describes **what works today** after stages **01–19**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email** via SMTP/Mailpit. Anti-bot flags stay off by default. **Prod ops guidance** (quorum, HPA, DLX) lives in [PROD.md](PROD.md) — local Compose is unchanged.
+> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email** and **scheduled re-scrape**. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
 
 ---
 
-## What is completed (01–18)
+## What is completed (01–19)
 
 | Stage | Capability |
 |-------|------------|
@@ -18,16 +18,16 @@ This document describes **what works today** after stages **01–18**, and how t
 | 16 | Feature-flagged stealth (Patchright), proxy URL, Redis domain rate limits |
 | 17 | SMTP email drop alerts + local Mailpit inbox |
 | 18 | Prod hardening **docs** (quorum / HPA / DLX runbooks) |
+| 19 | **Scheduler worker** — periodic re-scrape for active watches |
 
 ### Still missing / backlog
 
 | Item | Notes |
 |------|-------|
-| Scheduled re-scrape | No cron; recheck only via `POST /watches` (after Redis dedupe window) |
 | ProductGroup / hasVariant JSON-LD | Variant pages |
 | Web UI | Deferred to v2 |
 
-Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
+Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Scheduler: [SCHEDULER.md](SCHEDULER.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
 
 ---
 
@@ -62,13 +62,17 @@ For email locally, uncomment `NOTIFIER_SMTP_*` in `.env` (see [EMAIL.md](EMAIL.m
 
 ---
 
-## Run the three processes
+## Run the processes
 
 ```bash
 pnpm dev:api                 # terminal A
 pnpm dev:worker-scraper      # terminal B
 pnpm dev:worker-notifier     # terminal C
+pnpm dev:worker-scheduler    # terminal D — periodic re-scrape (stage 19)
 ```
+
+Watches are scraped once on create (`POST /watches`) and again when the scheduler
+finds them due (default: every hour per watch). See [SCHEDULER.md](SCHEDULER.md).
 
 ### Create a watch
 
@@ -126,10 +130,9 @@ pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chr
 
 ---
 
-## Roadmap after 18
+## Roadmap after 19
 
-1. **Backlog** — scheduled re-scrape / watch poller  
-2. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)  
-3. **v2** — Web UI  
+1. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)  
+2. **v2** — Web UI  
 
 Stage briefs live in [DELIVERY.md](DELIVERY.md).
