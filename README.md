@@ -1,15 +1,16 @@
 # Priceflux
 
-Distributed web scraper and price-tracking engine (API-first; UI deferred to v2).
+Distributed web scraper and price-tracking engine (API + Web UI).
 
-**How far are we?** Stages **01–18** are on `main`. Stage **19** (`feat/19-scheduled-rescrape`) = scheduler worker. See [docs/DELIVERY.md](docs/DELIVERY.md).
+**How far are we?** Stages **01–19** are on `main`. Stage **20** (`feat/20-web-ui`) = Vite React watches UI. See [docs/DELIVERY.md](docs/DELIVERY.md).
 
-**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Scheduler:** [docs/SCHEDULER.md](docs/SCHEDULER.md) · **Prod:** [docs/PROD.md](docs/PROD.md) · **Metrics:** [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
+**Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Web UI:** [docs/WEB.md](docs/WEB.md) · **Scheduler:** [docs/SCHEDULER.md](docs/SCHEDULER.md) · **Prod:** [docs/PROD.md](docs/PROD.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
 
 ## Stack
 
 - **Language:** TypeScript / Node.js
 - **API:** Fastify (`apps/api`)
+- **Web:** Vite + React (`apps/web`)
 - **Workers:** Playwright scrapers + notifier + scheduler
 - **Broker:** RabbitMQ
 - **Data:** PostgreSQL + Redis
@@ -19,6 +20,7 @@ Distributed web scraper and price-tracking engine (API-first; UI deferred to v2)
 ```
 apps/
   api/                 Fastify HTTP API
+  web/                 Vite + React watches UI
   worker-scraper/      Scraping workers
   worker-notifier/     Price alerts / history writer
   worker-scheduler/    Periodic re-scrape for active watches
@@ -77,6 +79,7 @@ pnpm db:migrate
 pnpm dev:worker-scraper    # terminal B
 pnpm dev:worker-notifier   # terminal C
 pnpm dev:worker-scheduler  # terminal D
+pnpm dev:web               # terminal E → http://127.0.0.1:5173
 # POST /watches → scrape → price_history (+ alert if price <= threshold)
 # scheduler re-enqueues due watches on an interval (see docs/SCHEDULER.md)
 ```
@@ -85,17 +88,20 @@ See [infra/README.md](infra/README.md) for ports, topology, and teardown.
 
 ## Debugging (VS Code / Cursor)
 
-Use **Run and Debug** (`F5`) with the configs in `.vscode/launch.json`:
+Use **Run and Debug** (`F5`) with the configs in `.vscode/launch.json`.
+Click the gutter (**red dot**) in a `.ts` / `.tsx` file, pick a config, then start.
 
 | Config | Use |
 |--------|-----|
 | Debug current TS file | Open any `.ts` file, then start |
-| API / Worker:* | Run app entrypoints under the debugger |
+| API / Worker:* | Run app entrypoints; breakpoints bind via source maps |
+| Web: Chrome (Vite) | Starts Vite + opens Chrome; breakpoints in `apps/web/src` |
 | Test: @priceflux/shared \| mq \| cache \| db | Breakpoints in package tests |
 | Test: * (integration) | Needs Compose services up |
 | DB: migrate | Run Drizzle migrations under the debugger |
 | Script: topology assert | Debug the topology apply/assert script |
 | Attach to Node process | Process started with `--inspect=9229` |
+| Compound: Pipeline / Full local | Several processes at once |
 
 Workspace setting `debug.javascript.autoAttachFilter` is **`onlyWithFlag`** (not `smart`/`always`). That avoids a known js-debug bootloader clash with `node --test` (`Environment was initialized without a V8::Inspector`). For terminal auto-attach, start Node with `--inspect` yourself.
 

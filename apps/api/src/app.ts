@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import { loadApiConfig, type ApiConfig } from './config.js';
@@ -42,6 +43,14 @@ export async function buildApp(
   });
 
   app.decorate('config', config);
+
+  if (config.corsOrigins.length > 0) {
+    await app.register(cors, {
+      origin: config.corsOrigins,
+      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    });
+  }
+
   await app.register(healthRoutes);
   await app.register(metricsPlugin);
 

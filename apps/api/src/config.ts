@@ -3,6 +3,11 @@ export type ApiConfig = {
   port: number;
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
   nodeEnv: string;
+  /**
+   * Origins allowed by CORS for the Web UI.
+   * Empty = CORS plugin not registered (API-only / curl clients).
+   */
+  corsOrigins: string[];
 };
 
 const LOG_LEVELS = new Set([
@@ -35,5 +40,18 @@ export function loadApiConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     port,
     logLevel: logLevelRaw as ApiConfig['logLevel'],
     nodeEnv: env.NODE_ENV ?? 'development',
+    corsOrigins: parseCorsOrigins(env.API_CORS_ORIGINS),
   };
+}
+
+/** Comma-separated origins; default local Vite UI in non-production. */
+function parseCorsOrigins(raw: string | undefined): string[] {
+  if (raw !== undefined) {
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  // Sensible local default so `pnpm dev:web` works without extra env.
+  return ['http://127.0.0.1:5173', 'http://localhost:5173'];
 }

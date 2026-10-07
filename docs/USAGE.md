@@ -1,12 +1,12 @@
-# Priceflux usage guide (through stage 19)
+# Priceflux usage guide (through stage 20)
 
-This document describes **what works today** after stages **01–19**, and how to run/test it locally.
+This document describes **what works today** after stages **01–20**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email** and **scheduled re-scrape**. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
+> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email**, **scheduled re-scrape**, and a **browser Web UI**. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
 
 ---
 
-## What is completed (01–19)
+## What is completed (01–20)
 
 | Stage | Capability |
 |-------|------------|
@@ -19,15 +19,15 @@ This document describes **what works today** after stages **01–19**, and how t
 | 17 | SMTP email drop alerts + local Mailpit inbox |
 | 18 | Prod hardening **docs** (quorum / HPA / DLX runbooks) |
 | 19 | **Scheduler worker** — periodic re-scrape for active watches |
+| 20 | **Web UI** — Vite + React watches console |
 
 ### Still missing / backlog
 
 | Item | Notes |
 |------|-------|
 | ProductGroup / hasVariant JSON-LD | Variant pages |
-| Web UI | Deferred to v2 |
 
-Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Scheduler: [SCHEDULER.md](SCHEDULER.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
+Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Scheduler: [SCHEDULER.md](SCHEDULER.md) · Web: [WEB.md](WEB.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
 
 ---
 
@@ -69,10 +69,12 @@ pnpm dev:api                 # terminal A
 pnpm dev:worker-scraper      # terminal B
 pnpm dev:worker-notifier     # terminal C
 pnpm dev:worker-scheduler    # terminal D — periodic re-scrape (stage 19)
+pnpm dev:web                 # terminal E — Web UI at http://127.0.0.1:5173
 ```
 
 Watches are scraped once on create (`POST /watches`) and again when the scheduler
-finds them due (default: every hour per watch). See [SCHEDULER.md](SCHEDULER.md).
+finds them due (default: every hour per watch). See [SCHEDULER.md](SCHEDULER.md)
+and [WEB.md](WEB.md).
 
 ### Create a watch
 
@@ -130,9 +132,8 @@ pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chr
 
 ---
 
-## Roadmap after 19
+## Roadmap after 20
 
-1. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)  
-2. **v2** — Web UI  
+1. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)
 
 Stage briefs live in [DELIVERY.md](DELIVERY.md).

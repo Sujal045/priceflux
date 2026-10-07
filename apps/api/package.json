@@ -14,6 +14,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@priceflux/cache": "workspace:*",
     "@priceflux/db": "workspace:*",
     "@priceflux/mq": "workspace:*",
