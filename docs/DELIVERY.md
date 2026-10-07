@@ -3,13 +3,13 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-10-05
+Last updated: 2026-10-06
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 19** on branch `feat/19-scheduled-rescrape` — periodic watch poller / scheduler worker.
+**Stage 20** on branch `feat/20-web-ui` — v2 Web UI (Vite + React) for watches.
 
-Code ready for user commit / PR. **Do not start backlog items** until this merges and the user asks.
+Code ready for user commit / PR. **Do not start further backlog** until this merges and the user asks.
 
 ## Workflow
 
@@ -41,41 +41,38 @@ Code ready for user commit / PR. **Do not start backlog items** until this merge
 | 16 | Anti-bot baseline (flagged) | `feat/16-antibot` | **done** | Merged via PR #15–#17 |
 | 17 | Email drop alerts | `feat/17-email-alerts` | **done** | Merged via PR #18 |
 | 18 | Prod hardening docs | `feat/18-prod-docs` | **done** | Merged via PR #19 |
-| 19 | Scheduled re-scrape | `feat/19-scheduled-rescrape` | **in progress** | Scheduler worker; awaiting commit/PR |
+| 19 | Scheduled re-scrape | `feat/19-scheduled-rescrape` | **done** | Merged via PR #20 |
+| 20 | Web UI (v2) | `feat/20-web-ui` | **in progress** | Vite React watches UI + API CORS |
 | — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR |
-| — | Web UI | — | **deferred (v2)** | Out of scope for v1 |
 
 ## Next
 
-1. User commits + opens **PR 19** (`feat/19-scheduled-rescrape` → `main`).
-2. After merge: backlog (ProductGroup) or v2 UI when the user asks.
+1. User commits + opens **PR 20** (`feat/20-web-ui` → `main`).
+2. After merge: backlog (ProductGroup) when the user asks.
 
 ---
 
-## Stage 19 brief — scheduled re-scrape
+## Stage 20 brief — Web UI
 
-**Goal:** Active watches are re-enqueued on an interval without calling `POST /watches` again.
+**Goal:** Browser UI to create/list/recheck/deactivate watches against the existing API.
 
 ### In scope
 
-- `apps/worker-scheduler`: poll DB, enqueue due watches via shared `tryEnqueueWatchScrape`.
-- Extract enqueue helper to `@priceflux/mq`; refactor API to use it.
-- Due logic: `max(price_history.scraped_at)` or `watch.created_at` + `SCHEDULER_WATCH_INTERVAL_SECONDS`.
-- Env: poll interval, watch interval, metrics port `:9103`.
-- Unit + optional integration test; `docs/SCHEDULER.md`; update USAGE / DELIVERY / OBSERVABILITY.
+- `apps/web`: Vite + React + TypeScript
+- Load watches by email, create watch, recheck (`POST /watches`), deactivate
+- API CORS via `API_CORS_ORIGINS` (local Vite defaults)
+- `docs/WEB.md`; update DELIVERY / USAGE / README
 
 ### Out of scope
 
-- Per-watch custom intervals (schema change).
-- Cron syntax / external schedulers (simple interval only).
-- ProductGroup, Web UI.
+- Real auth, charts, ProductGroup extractor
+- Dedicated `POST /watches/:id/check` (reuse create enqueue)
 
 ### Acceptance checklist
 
-- [x] Scheduler enqueues due active watches; skips inactive and recently scraped.
-- [x] Redis URL dedupe still applies.
-- [x] API create-watch path unchanged behavior via shared enqueue.
-- [x] Docs + env example updated.
+- [x] `pnpm dev:web` serves UI that talks to API with CORS
+- [x] Create / list / recheck / deactivate work against live API contracts
+- [x] Docs + env example updated
 
 ## How to update this file
 

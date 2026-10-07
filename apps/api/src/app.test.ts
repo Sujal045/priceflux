@@ -12,6 +12,10 @@ describe('loadApiConfig', () => {
     assert.equal(cfg.host, '0.0.0.0');
     assert.equal(cfg.port, 3000);
     assert.equal(cfg.logLevel, 'info');
+    assert.deepEqual(cfg.corsOrigins, [
+      'http://127.0.0.1:5173',
+      'http://localhost:5173',
+    ]);
   });
 
   it('reads API_HOST and API_PORT', () => {
@@ -25,6 +29,21 @@ describe('loadApiConfig', () => {
     assert.equal(cfg.port, 4000);
     assert.equal(cfg.logLevel, 'warn');
     assert.equal(cfg.nodeEnv, 'test');
+  });
+
+  it('parses API_CORS_ORIGINS', () => {
+    const cfg = loadApiConfig({
+      API_CORS_ORIGINS: 'https://app.example, http://127.0.0.1:5173',
+    });
+    assert.deepEqual(cfg.corsOrigins, [
+      'https://app.example',
+      'http://127.0.0.1:5173',
+    ]);
+  });
+
+  it('allows disabling CORS with empty API_CORS_ORIGINS', () => {
+    const cfg = loadApiConfig({ API_CORS_ORIGINS: '' });
+    assert.deepEqual(cfg.corsOrigins, []);
   });
 
   it('rejects invalid ports', () => {
