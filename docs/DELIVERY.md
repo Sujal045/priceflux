@@ -3,13 +3,13 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-10-06
+Last updated: 2026-10-07
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 20** on branch `feat/20-web-ui` — v2 Web UI (Vite + React) for watches.
+**Stage 21** on branch `feat/21-productgroup-jsonld` — ProductGroup / hasVariant JSON-LD extraction.
 
-Code ready for user commit / PR. **Do not start further backlog** until this merges and the user asks.
+Code ready for user commit / PR.
 
 ## Workflow
 
@@ -42,37 +42,36 @@ Code ready for user commit / PR. **Do not start further backlog** until this mer
 | 17 | Email drop alerts | `feat/17-email-alerts` | **done** | Merged via PR #18 |
 | 18 | Prod hardening docs | `feat/18-prod-docs` | **done** | Merged via PR #19 |
 | 19 | Scheduled re-scrape | `feat/19-scheduled-rescrape` | **done** | Merged via PR #20 |
-| 20 | Web UI (v2) | `feat/20-web-ui` | **in progress** | Vite React watches UI + API CORS |
-| — | ProductGroup / hasVariant JSON-LD | — | **backlog** | Separate small PR |
+| 20 | Web UI (v2) | `feat/20-web-ui` | **done** | Merged via PR #21 |
+| 21 | ProductGroup / hasVariant JSON-LD | `feat/21-productgroup-jsonld` | **in progress** | Awaiting commit/PR |
 
 ## Next
 
-1. User commits + opens **PR 20** (`feat/20-web-ui` → `main`).
-2. After merge: backlog (ProductGroup) when the user asks.
+1. User commits + opens **PR 21** (`feat/21-productgroup-jsonld` → `main`).
+2. After merge: ask before starting further work (v1 feature set is largely complete).
 
 ---
 
-## Stage 20 brief — Web UI
+## Stage 21 brief — ProductGroup / hasVariant JSON-LD
 
-**Goal:** Browser UI to create/list/recheck/deactivate watches against the existing API.
+**Goal:** Extract prices from Schema.org `ProductGroup` pages that nest SKUs in `hasVariant` (common on Odoo variant pages).
 
 ### In scope
 
-- `apps/web`: Vite + React + TypeScript
-- Load watches by email, create watch, recheck (`POST /watches`), deactivate
-- API CORS via `API_CORS_ORIGINS` (local Vite defaults)
-- `docs/WEB.md`; update DELIVERY / USAGE / README
+- Extend `packages/scrape-core` extractor: when no top-level `Product`, expand `ProductGroup.hasVariant`.
+- Among variants of a group, pick the **lowest** usable offer price.
+- Fixtures + unit tests; update DELIVERY / USAGE.
 
 ### Out of scope
 
-- Real auth, charts, ProductGroup extractor
-- Dedicated `POST /watches/:id/check` (reuse create enqueue)
+- `@id` cross-references between graph nodes (inline `hasVariant` only).
+- HTML/CSS selectors, Web UI changes, schema migrations.
 
 ### Acceptance checklist
 
-- [x] `pnpm dev:web` serves UI that talks to API with CORS
-- [x] Create / list / recheck / deactivate work against live API contracts
-- [x] Docs + env example updated
+- [x] `product-group` fixtures extract a price
+- [x] Existing Product / AggregateOffer / @graph tests still pass
+- [x] Docs updated
 
 ## How to update this file
 

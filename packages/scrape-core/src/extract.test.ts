@@ -70,6 +70,35 @@ describe('extractPriceFromHtml', () => {
     assert.deepEqual(result, { ok: false, reason: 'no_product' });
   });
 
+  it('extracts the lowest variant price from ProductGroup.hasVariant', () => {
+    const result = extractPriceFromHtml(loadFixture('product-group.html'));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.price, 19.5);
+    assert.equal(result.data.currency, 'USD');
+    assert.equal(result.data.title, 'Acme Tee — Blue / L');
+    assert.equal(result.data.source, 'json_ld');
+  });
+
+  it('uses ProductGroup name when variants omit name (Odoo-style @graph)', () => {
+    const result = extractPriceFromHtml(loadFixture('product-group-graph.html'));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.data.price, 399);
+    assert.equal(result.data.currency, 'EUR');
+    assert.equal(result.data.title, 'Odoo Desk');
+  });
+
+  it('returns no_product for ProductGroup with empty hasVariant', () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'ProductGroup',
+      name: 'Empty Group',
+      hasVariant: [],
+    })}</script>`;
+    const result = extractPriceFromHtml(html);
+    assert.deepEqual(result, { ok: false, reason: 'no_product' });
+  });
+
   it('returns invalid_price for negative offer prices', () => {
     const html = `<script type="application/ld+json">${JSON.stringify({
       '@type': 'Product',
