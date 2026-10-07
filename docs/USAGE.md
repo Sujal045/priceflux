@@ -1,12 +1,12 @@
-# Priceflux usage guide (through stage 20)
+# Priceflux usage guide (through stage 21)
 
-This document describes **what works today** after stages **01–20**, and how to run/test it locally.
+This document describes **what works today** after stages **01–21**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for JSON-LD fixtures, including optional **email**, **scheduled re-scrape**, and a **browser Web UI**. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
+> **Short answer:** Full pipeline works for JSON-LD fixtures (including **ProductGroup** / variant pages), optional **email**, **scheduled re-scrape**, and a **browser Web UI**. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
 
 ---
 
-## What is completed (01–20)
+## What is completed (01–21)
 
 | Stage | Capability |
 |-------|------------|
@@ -20,12 +20,13 @@ This document describes **what works today** after stages **01–20**, and how t
 | 18 | Prod hardening **docs** (quorum / HPA / DLX runbooks) |
 | 19 | **Scheduler worker** — periodic re-scrape for active watches |
 | 20 | **Web UI** — Vite + React watches console |
+| 21 | **ProductGroup / hasVariant** JSON-LD extraction (variant / Odoo-style pages) |
 
 ### Still missing / backlog
 
 | Item | Notes |
 |------|-------|
-| ProductGroup / hasVariant JSON-LD | Variant pages |
+| — | v1 core pipeline is complete; further work is polish / ops / v2 features |
 
 Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Scheduler: [SCHEDULER.md](SCHEDULER.md) · Web: [WEB.md](WEB.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
 
@@ -36,6 +37,7 @@ Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Scheduler: [SCHEDULER.md](SCHEDULER.md) ·
 | Scenario | Expectation after stage 17+ |
 |----------|----------------------------|
 | Local HTML with Product JSON-LD (fixture / static server) | **Works end-to-end**: history row + alert if `price <= threshold` |
+| Local HTML with ProductGroup + hasVariant JSON-LD | **Works** — extracts lowest variant offer price |
 | Same + Mailpit SMTP env | **Email** appears in `http://127.0.0.1:8025` |
 | SMTP env unset | Log ± webhook only (no email) |
 | Small/indie shop with Schema.org Offer JSON-LD | **May work** — try it; check worker logs / `scrape.dead` if not |
@@ -132,8 +134,8 @@ pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chr
 
 ---
 
-## Roadmap after 20
+## Roadmap after 21
 
-1. **Backlog** — `ProductGroup` / `hasVariant` JSON-LD (Odoo variant pages)
+v1 core is complete. Optional follow-ups when asked: richer variant `@id` graph resolution, HTML fallback extractors, UI polish.
 
 Stage briefs live in [DELIVERY.md](DELIVERY.md).

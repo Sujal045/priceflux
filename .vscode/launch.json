@@ -5,56 +5,110 @@
       "name": "Debug current TS file",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--import", "tsx"],
-      "args": ["${file}"],
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${file}",
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
       "name": "API: apps/api",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--import", "tsx"],
-      "args": ["${workspaceFolder}/apps/api/src/index.ts"],
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${workspaceFolder}/apps/api/src/index.ts",
       "cwd": "${workspaceFolder}/apps/api",
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
       "name": "Worker: scraper",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--import", "tsx"],
-      "args": ["${workspaceFolder}/apps/worker-scraper/src/index.ts"],
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${workspaceFolder}/apps/worker-scraper/src/index.ts",
       "cwd": "${workspaceFolder}/apps/worker-scraper",
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
       "name": "Worker: notifier",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--import", "tsx"],
-      "args": ["${workspaceFolder}/apps/worker-notifier/src/index.ts"],
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${workspaceFolder}/apps/worker-notifier/src/index.ts",
       "cwd": "${workspaceFolder}/apps/worker-notifier",
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Worker: scheduler",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${workspaceFolder}/apps/worker-scheduler/src/index.ts",
+      "cwd": "${workspaceFolder}/apps/worker-scheduler",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Web: Chrome (Vite)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}/apps/web",
+      "preLaunchTask": "web: vite dev",
+      "sourceMapPathOverrides": {
+        "/@fs/*": "/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*"
+      }
     },
     {
       "name": "Script: topology assert",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--import", "tsx"],
-      "args": ["${workspaceFolder}/scripts/assert-topology.ts"],
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${workspaceFolder}/scripts/assert-topology.ts",
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -64,6 +118,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -74,6 +129,7 @@
       "cwd": "${workspaceFolder}/packages/shared",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -83,6 +139,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -90,6 +147,7 @@
       "cwd": "${workspaceFolder}/packages/mq",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -99,6 +157,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -110,6 +169,7 @@
       },
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -119,6 +179,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -129,6 +190,7 @@
       "cwd": "${workspaceFolder}/packages/cache",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -138,6 +200,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -152,6 +215,7 @@
       },
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -161,6 +225,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -171,6 +236,7 @@
       "cwd": "${workspaceFolder}/packages/db",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -180,6 +246,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -194,17 +261,19 @@
       },
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
       "name": "DB: migrate",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--import", "tsx"],
-      "args": ["${workspaceFolder}/packages/db/src/migrate-cli.ts"],
+      "runtimeArgs": ["--import", "tsx", "--enable-source-maps"],
+      "program": "${workspaceFolder}/packages/db/src/migrate-cli.ts",
       "cwd": "${workspaceFolder}/packages/db",
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -214,6 +283,7 @@
       "runtimeArgs": [
         "--import",
         "tsx",
+        "--enable-source-maps",
         "--test",
         "--test-concurrency=1"
       ],
@@ -222,6 +292,7 @@
       "envFile": "${workspaceFolder}/.env",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": false,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
@@ -230,6 +301,7 @@
       "request": "attach",
       "port": 9229,
       "restart": true,
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     }
   ],
@@ -237,6 +309,31 @@
     {
       "name": "API + scraper worker",
       "configurations": ["API: apps/api", "Worker: scraper"],
+      "stopAll": true
+    },
+    {
+      "name": "API + notifier",
+      "configurations": ["API: apps/api", "Worker: notifier"],
+      "stopAll": true
+    },
+    {
+      "name": "Pipeline (API + scraper + notifier)",
+      "configurations": [
+        "API: apps/api",
+        "Worker: scraper",
+        "Worker: notifier"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "Full local (API + workers + Web)",
+      "configurations": [
+        "API: apps/api",
+        "Worker: scraper",
+        "Worker: notifier",
+        "Worker: scheduler",
+        "Web: Chrome (Vite)"
+      ],
       "stopAll": true
     }
   ]
