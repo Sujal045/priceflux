@@ -3,13 +3,15 @@
 Source of truth for **what is done** and **what is next**.  
 Agents and humans must update this file when a PR is merged or a stage starts.
 
-Last updated: 2026-10-07
+Last updated: 2026-10-11
 
 ## Current WIP (read this first in a new chat)
 
-**Stage 21** on branch `feat/21-productgroup-jsonld` — ProductGroup / hasVariant JSON-LD extraction.
+**Stage 22** on branch `feat/22-history-recheck` — price-history API, Web history view
+(latest price + sparkline), and a dedicated recheck endpoint (`POST /watches/:id/check`).
+Bundles audit phases 1–3 into a single PR at the user's request.
 
-Code ready for user commit / PR.
+Code ready for user review / PR.
 
 ## Workflow
 
@@ -43,12 +45,13 @@ Code ready for user commit / PR.
 | 18 | Prod hardening docs | `feat/18-prod-docs` | **done** | Merged via PR #19 |
 | 19 | Scheduled re-scrape | `feat/19-scheduled-rescrape` | **done** | Merged via PR #20 |
 | 20 | Web UI (v2) | `feat/20-web-ui` | **done** | Merged via PR #21 |
-| 21 | ProductGroup / hasVariant JSON-LD | `feat/21-productgroup-jsonld` | **in progress** | Awaiting commit/PR |
+| 21 | ProductGroup / hasVariant JSON-LD | `feat/21-productgroup-jsonld` | **done** | Merged via PR #22 |
+| 22 | Price history API + Web view + recheck endpoint | `feat/22-history-recheck` | **in progress** | Audit phases 1–3 (one PR) |
 
 ## Next
 
-1. User commits + opens **PR 21** (`feat/21-productgroup-jsonld` → `main`).
-2. After merge: ask before starting further work (v1 feature set is largely complete).
+1. User reviews + merges **PR 22** (`feat/22-history-recheck` → `main`).
+2. After merge: ask before starting the next audit phase (alert hygiene, then extraction reliability).
 
 ---
 
@@ -72,6 +75,39 @@ Code ready for user commit / PR.
 - [x] `product-group` fixtures extract a price
 - [x] Existing Product / AggregateOffer / @graph tests still pass
 - [x] Docs updated
+
+---
+
+## Stage 22 brief — Price history API + Web view + recheck endpoint
+
+**Goal:** Make the price history we already persist visible, and make "recheck" a clear,
+first-class action. Bundles audit phases 1–3 into one PR (user request).
+
+### In scope
+
+- **API:** `GET /watches/:id/history?limit=` (newest first) and `latestPrice` /
+  `latestCurrency` / `lastCheckedAt` enrichment on the watch DTO (latest `price_history`
+  row via `DISTINCT ON`).
+- **API:** dedicated `POST /watches/:id/check` — enqueues a scrape for an existing watch
+  (202 queued / 200 deduped with `dedupeTtlSeconds`); no watch mutation.
+- **Web:** latest price + last-checked on each card, expandable history (inline SVG
+  sparkline + min/max/% off peak + recent list), recheck uses the new endpoint with a
+  live cooldown countdown while the dedupe window is held.
+- Unit tests (history query schema) + integration tests (history, latest-price, recheck).
+
+### Out of scope
+
+- Auth / ownership scoping (data still email-keyed; see audit Track 5).
+- Alert hygiene (repeat-email suppression), extraction reliability, watch health/backoff.
+- Schema migrations (reuses the existing `price_history` table).
+
+### Acceptance checklist
+
+- [x] `GET /watches/:id/history` returns rows; 404 for unknown id; `limit` validated
+- [x] `GET /watches` and `GET /watches/:id` include `latestPrice` / `lastCheckedAt`
+- [x] `POST /watches/:id/check` → 202 then 200 (deduped) within the window; 404 unknown
+- [x] Web shows latest price, history sparkline, and a recheck cooldown countdown
+- [x] `pnpm build` / `typecheck` / `lint` / unit tests green (integration needs infra up)
 
 ## How to update this file
 

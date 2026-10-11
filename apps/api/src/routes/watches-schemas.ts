@@ -26,3 +26,8 @@ export type UpdateWatchBody = z.infer<typeof UpdateWatchBodySchema>;
 export const ListWatchesQuerySchema = z.object({
   email: z.string().email(),
 });
+
+export const WatchHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(500).default(50),
+});
+export type WatchHistoryQuery = z.infer<typeof WatchHistoryQuerySchema>;

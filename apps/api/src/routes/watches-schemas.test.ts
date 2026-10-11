@@ -5,6 +5,7 @@ import {
   CreateWatchBodySchema,
   ListWatchesQuerySchema,
   UpdateWatchBodySchema,
+  WatchHistoryQuerySchema,
 } from './watches-schemas.js';
 
 describe('CreateWatchBodySchema', () => {
@@ -44,5 +45,22 @@ describe('ListWatchesQuerySchema', () => {
     assert.throws(() => ListWatchesQuerySchema.parse({}));
     const q = ListWatchesQuerySchema.parse({ email: 'a@b.co' });
     assert.equal(q.email, 'a@b.co');
+  });
+});
+
+describe('WatchHistoryQuerySchema', () => {
+  it('defaults limit to 50', () => {
+    const q = WatchHistoryQuerySchema.parse({});
+    assert.equal(q.limit, 50);
+  });
+
+  it('coerces a string limit from the query string', () => {
+    const q = WatchHistoryQuerySchema.parse({ limit: '10' });
+    assert.equal(q.limit, 10);
+  });
+
+  it('rejects non-positive or oversized limits', () => {
+    assert.throws(() => WatchHistoryQuerySchema.parse({ limit: '0' }));
+    assert.throws(() => WatchHistoryQuerySchema.parse({ limit: '501' }));
   });
 });

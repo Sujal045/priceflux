@@ -2,7 +2,7 @@
 
 Distributed web scraper and price-tracking engine (API + Web UI).
 
-**How far are we?** Stages **01–20** are on `main`. Stage **21** (`feat/21-productgroup-jsonld`) = ProductGroup / hasVariant JSON-LD. See [docs/DELIVERY.md](docs/DELIVERY.md).
+**How far are we?** Stages **01–21** are on `main` (watches API, scraper/notifier/scheduler, JSON-LD + ProductGroup extraction, Web UI). Stage **22** (`feat/22-history-recheck`) adds a price-history API, a Web history view, and a dedicated recheck endpoint. See [docs/DELIVERY.md](docs/DELIVERY.md).
 
 **Operator guide:** [docs/USAGE.md](docs/USAGE.md) · **Web UI:** [docs/WEB.md](docs/WEB.md) · **Scheduler:** [docs/SCHEDULER.md](docs/SCHEDULER.md) · **Prod:** [docs/PROD.md](docs/PROD.md) · **Email:** [docs/EMAIL.md](docs/EMAIL.md)
 

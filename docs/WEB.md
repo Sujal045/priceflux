@@ -23,13 +23,15 @@ pnpm dev:web
 
 | Action | API used |
 |--------|----------|
-| Load watches by email | `GET /watches?email=` |
+| Load watches by email (with latest price + last checked) | `GET /watches?email=` |
 | Add watch + enqueue scrape | `POST /watches` |
-| Recheck price | `POST /watches` (same email + url) |
+| View price history (sparkline + list) | `GET /watches/:id/history` |
+| Recheck price | `POST /watches/:id/check` |
 | Deactivate | `DELETE /watches/:id` |
 
-Recheck respects the Redis **5-minute URL dedupe** window — the UI surfaces
-`scrapeQueued: false` with remaining TTL.
+Recheck respects the Redis **~5-minute URL dedupe** window — the button shows a live
+countdown (and the API returns `scrapeQueued: false` with `dedupeTtlSeconds`) while a
+recent check is still fresh.
 
 ## Env
 
@@ -50,5 +52,4 @@ pnpm --filter @priceflux/web preview
 ## Out of scope (this PR)
 
 - Login / API keys / email verification
-- Price history charts
 - Deployed static hosting config beyond Vite build
