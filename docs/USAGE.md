@@ -1,12 +1,12 @@
-# Priceflux usage guide (through stage 21)
+# Priceflux usage guide (through stage 22)
 
-This document describes **what works today** after stages **01–21**, and how to run/test it locally.
+This document describes **what works today** after stages **01–22**, and how to run/test it locally.
 
-> **Short answer:** Full pipeline works for JSON-LD fixtures (including **ProductGroup** / variant pages), optional **email**, **scheduled re-scrape**, and a **browser Web UI**. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
+> **Short answer:** Full pipeline works for JSON-LD fixtures (including **ProductGroup** / variant pages), optional **email**, **scheduled re-scrape**, a **browser Web UI** with **price history**, and a dedicated **recheck** endpoint. Anti-bot flags stay off by default. **Prod ops** in [PROD.md](PROD.md).
 
 ---
 
-## What is completed (01–21)
+## What is completed (01–22)
 
 | Stage | Capability |
 |-------|------------|
@@ -21,12 +21,15 @@ This document describes **what works today** after stages **01–21**, and how t
 | 19 | **Scheduler worker** — periodic re-scrape for active watches |
 | 20 | **Web UI** — Vite + React watches console |
 | 21 | **ProductGroup / hasVariant** JSON-LD extraction (variant / Odoo-style pages) |
+| 22 | **Price history API** (`GET /watches/:id/history`, latest price on watch) + Web history view + **recheck** (`POST /watches/:id/check`) |
 
 ### Still missing / backlog
 
 | Item | Notes |
 |------|-------|
-| — | v1 core pipeline is complete; further work is polish / ops / v2 features |
+| Alert hygiene | Scheduled rechecks still re-email on every below-threshold scrape (audit Track 4) |
+| Auth / ownership | Watches are still email-keyed with no verification (audit Track 5) |
+| Hard-retailer extraction | JSON-LD/ProductGroup only; HTML fallback + anti-bot are later phases |
 
 Anti-bot: [ANTIBOT.md](ANTIBOT.md) · Scheduler: [SCHEDULER.md](SCHEDULER.md) · Web: [WEB.md](WEB.md) · Metrics: [OBSERVABILITY.md](OBSERVABILITY.md) · Email: [EMAIL.md](EMAIL.md) · Prod: [PROD.md](PROD.md).
 
@@ -107,6 +110,26 @@ docker exec -it priceflux-postgres \
   -c 'SELECT job_id, price, currency, title FROM price_history ORDER BY created_at DESC LIMIT 5;'
 ```
 
+### Price history + recheck (stage 22)
+
+`GET /watches?email=` and `GET /watches/:id` now include `latestPrice`, `latestCurrency`,
+and `lastCheckedAt` (from the most recent `price_history` row). Fetch the full series with:
+
+```bash
+# newest first; limit defaults to 50 (max 500)
+curl -s "http://127.0.0.1:3000/watches/$WATCH_ID/history?limit=20" | jq
+```
+
+Trigger a fresh scrape for an existing watch without re-posting the URL:
+
+```bash
+# 202 = scrape queued; 200 = deduped (recently checked) with dedupeTtlSeconds
+curl -s -X POST "http://127.0.0.1:3000/watches/$WATCH_ID/check" | jq
+```
+
+The Web UI surfaces the latest price + a history sparkline per watch, and the "Recheck now"
+button shows a countdown while the ~5-minute dedupe window is held.
+
 ### Failure / retries
 
 Bad URLs or blocked sites → scraper retries (`scrape.retry.*`) then `scrape.dead`. Replay:
@@ -134,8 +157,10 @@ pnpm --filter @priceflux/worker-scraper test:integration    # needs broker + Chr
 
 ---
 
-## Roadmap after 21
+## Roadmap after 22
 
-v1 core is complete. Optional follow-ups when asked: richer variant `@id` graph resolution, HTML fallback extractors, UI polish.
+Next audit phases when asked: alert hygiene (suppress repeat emails), extraction reliability
+(HTML/meta fallback + render waits + failure classification), watch health/backoff, and auth/ownership.
+Richer variant `@id` graph resolution and UI polish remain optional follow-ups.
 
 Stage briefs live in [DELIVERY.md](DELIVERY.md).

@@ -4,15 +4,28 @@ import {
   apiBaseUrl,
   createOrRecheckWatch,
   deactivateWatch,
+  getWatchHistory,
   listWatches,
+  recheckWatch,
+  type PriceHistoryPoint,
   type WatchDto,
 } from './api.js';
 
 const EMAIL_KEY = 'priceflux.email';
+/** Local cooldown after a recheck — matches the API's ~5-min URL dedupe window. */
+const RECHECK_COOLDOWN_SECONDS = 300;
 
 type Banner =
   | { kind: 'ok' | 'warn' | 'error'; text: string }
   | null;
+
+type HistoryState = {
+  open: boolean;
+  loading: boolean;
+  loaded: boolean;
+  points: PriceHistoryPoint[];
+  error?: string;
+};
 
 function hostOf(url: string): string {
   try {
@@ -20,6 +33,47 @@ function hostOf(url: string): string {
   } catch {
     return url;
   }
+}
+
+function formatMoney(price: number, currency: string | null): string {
+  return `${price} ${currency ?? ''}`.trim();
+}
+
+function Sparkline({ points }: { points: PriceHistoryPoint[] }) {
+  if (points.length < 2) {
+    return null;
+  }
+  const width = 420;
+  const height = 72;
+  const pad = 6;
+  const prices = points.map((p) => p.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const span = max - min || 1;
+  const stepX = (width - pad * 2) / (points.length - 1);
+  const coords = points.map((p, i) => {
+    const x = pad + i * stepX;
+    const y = pad + (height - pad * 2) * (1 - (p.price - min) / span);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  return (
+    <svg
+      className="spark"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="Price history trend"
+    >
+      <polyline className="spark-line" points={coords.join(' ')} />
+      <circle
+        className="spark-dot"
+        cx={coords[coords.length - 1]?.split(',')[0]}
+        cy={coords[coords.length - 1]?.split(',')[1]}
+        r={3}
+      />
+    </svg>
+  );
 }
 
 export function App() {
@@ -34,6 +88,23 @@ export function App() {
   const [url, setUrl] = useState('');
   const [threshold, setThreshold] = useState('30');
   const [currency, setCurrency] = useState('USD');
+
+  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
+  const [now, setNow] = useState(() => Date.now());
+  const [history, setHistory] = useState<Record<string, HistoryState>>({});
+
+  const anyCooldownActive = Object.values(cooldowns).some(
+    (until) => until > now,
+  );
+
+  // Drive the recheck countdown only while a cooldown is active.
+  useEffect(() => {
+    if (!anyCooldownActive) {
+      return undefined;
+    }
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [anyCooldownActive]);
 
   async function refresh(nextEmail = email) {
     const trimmed = nextEmail.trim().toLowerCase();
@@ -69,6 +140,14 @@ export function App() {
     await refresh();
   }
 
+  function startCooldown(watchId: string, seconds: number) {
+    setCooldowns((prev) => ({
+      ...prev,
+      [watchId]: Date.now() + seconds * 1000,
+    }));
+    setNow(Date.now());
+  }
+
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     const trimmedEmail = email.trim().toLowerCase();
@@ -94,16 +173,18 @@ export function App() {
       setEmail(trimmedEmail);
 
       if (result.scrapeQueued) {
+        startCooldown(result.watch.id, RECHECK_COOLDOWN_SECONDS);
         setBanner({
           kind: 'ok',
           text: result.created
-            ? `Watch created and scrape queued (${result.jobId ?? 'job'}).`
+            ? `Watch created and scrape queued (${result.jobId ?? 'job'}). The price appears here once the scraper runs.`
             : `Scrape queued for existing watch (${result.jobId ?? 'job'}).`,
         });
       } else {
+        startCooldown(result.watch.id, result.dedupeTtlSeconds ?? 300);
         setBanner({
           kind: 'warn',
-          text: `Watch saved, but scrape was deduped. Try again in ~${result.dedupeTtlSeconds ?? 300}s.`,
+          text: `Watch saved, but a scrape ran recently. Recheck available in ~${result.dedupeTtlSeconds ?? 300}s.`,
         });
       }
 
@@ -128,24 +209,24 @@ export function App() {
     setBusyId(watch.id);
     setBanner(null);
     try {
-      const result = await createOrRecheckWatch({
-        email: trimmedEmail,
-        url: watch.url,
-        ...(watch.threshold !== null ? { threshold: watch.threshold } : {}),
-        ...(watch.currency ? { currency: watch.currency } : {}),
-      });
+      const result = await recheckWatch(watch.id);
       if (result.scrapeQueued) {
+        startCooldown(watch.id, RECHECK_COOLDOWN_SECONDS);
         setBanner({
           kind: 'ok',
-          text: `Recheck queued (${result.jobId ?? 'job'}).`,
+          text: `Recheck queued (${result.jobId ?? 'job'}). The price updates here after the scraper runs.`,
         });
       } else {
+        startCooldown(watch.id, result.dedupeTtlSeconds ?? 300);
         setBanner({
           kind: 'warn',
-          text: `Deduped — wait ~${result.dedupeTtlSeconds ?? 300}s before rechecking.`,
+          text: `Checked recently — recheck again in ~${result.dedupeTtlSeconds ?? 300}s.`,
         });
       }
       await refresh(trimmedEmail);
+      if (history[watch.id]?.open) {
+        await loadHistory(watch.id, true);
+      }
     } catch (err) {
       setBanner({
         kind: 'error',
@@ -173,14 +254,66 @@ export function App() {
     }
   }
 
+  async function loadHistory(watchId: string, force = false) {
+    const current = history[watchId];
+    if (current?.loaded && !force) {
+      return;
+    }
+    setHistory((prev) => ({
+      ...prev,
+      [watchId]: {
+        open: true,
+        loading: true,
+        loaded: prev[watchId]?.loaded ?? false,
+        points: prev[watchId]?.points ?? [],
+      },
+    }));
+    try {
+      const points = await getWatchHistory(watchId, 100);
+      setHistory((prev) => ({
+        ...prev,
+        [watchId]: { open: true, loading: false, loaded: true, points },
+      }));
+    } catch (err) {
+      setHistory((prev) => ({
+        ...prev,
+        [watchId]: {
+          open: true,
+          loading: false,
+          loaded: false,
+          points: prev[watchId]?.points ?? [],
+          error: err instanceof Error ? err.message : 'Failed to load history',
+        },
+      }));
+    }
+  }
+
+  function toggleHistory(watch: WatchDto) {
+    const current = history[watch.id];
+    const open = !(current?.open ?? false);
+    setHistory((prev) => ({
+      ...prev,
+      [watch.id]: {
+        open,
+        loading: current?.loading ?? false,
+        loaded: current?.loaded ?? false,
+        points: current?.points ?? [],
+        ...(current?.error ? { error: current.error } : {}),
+      },
+    }));
+    if (open) {
+      void loadHistory(watch.id);
+    }
+  }
+
   return (
     <div className="app">
       <header className="brand">
         <h1>Priceflux</h1>
         <p>
           Watch product URLs and get alerted when the price hits your threshold.
-          Create a watch, then recheck anytime — workers handle scrape, history,
-          and email.
+          Create a watch, recheck anytime, and track the price history — workers
+          handle scrape, history, and email.
         </p>
       </header>
 
@@ -256,71 +389,163 @@ export function App() {
           </p>
         ) : (
           <div className="watch-list">
-            {watches.map((watch) => (
-              <article key={watch.id} className="watch">
-                <div className="watch-top">
-                  <div>
-                    <div className="watch-url">
-                      <a href={watch.url} target="_blank" rel="noreferrer">
-                        {watch.url}
-                      </a>
+            {watches.map((watch) => {
+              const until = cooldowns[watch.id] ?? 0;
+              const remaining =
+                until > now ? Math.ceil((until - now) / 1000) : 0;
+              const onCooldown = remaining > 0;
+              const hist = history[watch.id];
+              const points = hist?.points ?? [];
+              const ascending = [...points].reverse();
+              const prices = points.map((p) => p.price);
+              const min = prices.length ? Math.min(...prices) : null;
+              const max = prices.length ? Math.max(...prices) : null;
+              const dropPct =
+                max && max > 0 && watch.latestPrice !== null
+                  ? Math.round(((max - watch.latestPrice) / max) * 100)
+                  : null;
+
+              return (
+                <article key={watch.id} className="watch">
+                  <div className="watch-top">
+                    <div>
+                      <div className="watch-url">
+                        <a href={watch.url} target="_blank" rel="noreferrer">
+                          {watch.url}
+                        </a>
+                      </div>
+                      <div className="watch-site">
+                        {watch.site ?? hostOf(watch.url)}
+                      </div>
                     </div>
-                    <div className="watch-site">
-                      {watch.site ?? hostOf(watch.url)}
-                    </div>
+                    <span
+                      className={`badge ${watch.active ? 'badge-active' : 'badge-off'}`}
+                    >
+                      {watch.active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                  <span
-                    className={`badge ${watch.active ? 'badge-active' : 'badge-off'}`}
-                  >
-                    {watch.active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                <div className="watch-stats">
-                  <span>
-                    Threshold:{' '}
-                    <strong>
-                      {watch.threshold !== null
-                        ? `${watch.threshold} ${watch.currency ?? ''}`.trim()
-                        : '—'}
-                    </strong>
-                  </span>
-                  <span>
-                    Updated:{' '}
-                    <strong>
-                      {new Date(watch.updatedAt).toLocaleString()}
-                    </strong>
-                  </span>
-                </div>
-                <div className="watch-actions">
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    disabled={busyId === watch.id || !watch.active}
-                    onClick={() => void onRecheck(watch)}
-                  >
-                    Recheck now
-                  </button>
-                  {watch.active ? (
+                  <div className="watch-stats">
+                    <span>
+                      Latest:{' '}
+                      <strong>
+                        {watch.latestPrice !== null
+                          ? formatMoney(watch.latestPrice, watch.latestCurrency)
+                          : 'No price yet'}
+                      </strong>
+                    </span>
+                    <span>
+                      Threshold:{' '}
+                      <strong>
+                        {watch.threshold !== null
+                          ? formatMoney(watch.threshold, watch.currency)
+                          : '—'}
+                      </strong>
+                    </span>
+                    <span>
+                      Last checked:{' '}
+                      <strong>
+                        {watch.lastCheckedAt
+                          ? new Date(watch.lastCheckedAt).toLocaleString()
+                          : '—'}
+                      </strong>
+                    </span>
+                  </div>
+                  <div className="watch-actions">
                     <button
                       type="button"
-                      className="btn btn-danger"
-                      disabled={busyId === watch.id}
-                      onClick={() => void onDeactivate(watch)}
+                      className="btn btn-ghost"
+                      disabled={busyId === watch.id || !watch.active || onCooldown}
+                      onClick={() => void onRecheck(watch)}
                     >
-                      Deactivate
+                      {onCooldown ? `Recheck in ${remaining}s` : 'Recheck now'}
                     </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => toggleHistory(watch)}
+                    >
+                      {hist?.open ? 'Hide history' : 'History'}
+                    </button>
+                    {watch.active ? (
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        disabled={busyId === watch.id}
+                        onClick={() => void onDeactivate(watch)}
+                      >
+                        Deactivate
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {hist?.open ? (
+                    <div className="history">
+                      {hist.loading && points.length === 0 ? (
+                        <p className="empty">Loading history…</p>
+                      ) : hist.error ? (
+                        <p className="banner banner-error">{hist.error}</p>
+                      ) : points.length === 0 ? (
+                        <p className="empty">
+                          No price history yet. Recheck once the scraper is
+                          running.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="history-summary">
+                            <span>
+                              Points: <strong>{points.length}</strong>
+                            </span>
+                            {min !== null ? (
+                              <span>
+                                Min:{' '}
+                                <strong>
+                                  {formatMoney(min, watch.latestCurrency)}
+                                </strong>
+                              </span>
+                            ) : null}
+                            {max !== null ? (
+                              <span>
+                                Max:{' '}
+                                <strong>
+                                  {formatMoney(max, watch.latestCurrency)}
+                                </strong>
+                              </span>
+                            ) : null}
+                            {dropPct !== null ? (
+                              <span>
+                                Off peak: <strong>{dropPct}%</strong>
+                              </span>
+                            ) : null}
+                          </div>
+                          <Sparkline points={ascending} />
+                          <ul className="history-list">
+                            {points.slice(0, 10).map((p) => (
+                              <li key={p.id}>
+                                <span>
+                                  {new Date(p.scrapedAt).toLocaleString()}
+                                </span>
+                                <strong>
+                                  {formatMoney(p.price, p.currency)}
+                                </strong>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
                   ) : null}
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
 
       <p className="foot">
-        Recheck uses the same API as create (`POST /watches`) and respects the
-        5-minute URL dedupe window. Keep API + scraper + notifier running for
-        alerts.
+        Recheck enqueues a fresh scrape (<code>POST /watches/:id/check</code>) and
+        respects the ~5-minute URL dedupe window — the button shows a countdown
+        while a check is still fresh. Keep API + scraper + notifier running for
+        prices and alerts.
       </p>
     </div>
   );

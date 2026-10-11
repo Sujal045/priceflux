@@ -1,7 +1,14 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import { type PricefluxRedis } from '@priceflux/cache';
-import { users, watches, type Database, type Watch } from '@priceflux/db';
+import {
+  priceHistory,
+  users,
+  watches,
+  type Database,
+  type PriceHistoryRow,
+  type Watch,
+} from '@priceflux/db';
 import { tryEnqueueWatchScrape, type RabbitConnection } from '@priceflux/mq';
 import { canonicalizeUrl, dedupeKeyForUrl } from '@priceflux/shared';
 
@@ -19,6 +26,23 @@ export type WatchDto = {
   active: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Most recent scraped price (null until a scrape lands). */
+  latestPrice: number | null;
+  latestCurrency: string | null;
+  /** `scraped_at` of the most recent price_history row. */
+  lastCheckedAt: string | null;
+};
+
+export type PriceHistoryDto = {
+  id: string;
+  watchId: string;
+  jobId: string;
+  price: number;
+  currency: string;
+  title: string | null;
+  source: string;
+  scrapedAt: string;
+  createdAt: string;
 };
 
 export type CreateWatchResult = {
@@ -29,11 +53,25 @@ export type CreateWatchResult = {
   dedupeTtlSeconds?: number;
 };
 
+export type RecheckWatchResult = {
+  watch: WatchDto;
+  scrapeQueued: boolean;
+  jobId?: string;
+  dedupeTtlSeconds?: number;
+};
+
+/** Latest price snapshot for a watch, used to enrich `WatchDto`. */
+type LatestPrice = {
+  price: number;
+  currency: string;
+  scrapedAt: Date;
+};
+
 function siteFromUrl(canonicalUrl: string): string {
   return new URL(canonicalUrl).hostname;
 }
 
-function toDto(row: Watch): WatchDto {
+function toDto(row: Watch, latest?: LatestPrice | null): WatchDto {
   return {
     id: row.id,
     userId: row.userId,
@@ -46,6 +84,23 @@ function toDto(row: Watch): WatchDto {
     active: row.active,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    latestPrice: latest ? latest.price : null,
+    latestCurrency: latest ? latest.currency : null,
+    lastCheckedAt: latest ? latest.scrapedAt.toISOString() : null,
+  };
+}
+
+function toHistoryDto(row: PriceHistoryRow): PriceHistoryDto {
+  return {
+    id: row.id,
+    watchId: row.watchId,
+    jobId: row.jobId,
+    price: Number(row.price),
+    currency: row.currency,
+    title: row.title,
+    source: row.source,
+    scrapedAt: row.scrapedAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
   };
 }
 
@@ -59,6 +114,53 @@ async function ensureUser(db: Database, email: string) {
     throw new Error('Failed to create user');
   }
   return created;
+}
+
+/**
+ * Latest price_history row per watch id (one query, `DISTINCT ON`).
+ * Returned as a map keyed by watch id for cheap enrichment.
+ */
+async function latestPricesByWatchIds(
+  db: Database,
+  watchIds: string[],
+): Promise<Map<string, LatestPrice>> {
+  if (watchIds.length === 0) {
+    return new Map();
+  }
+  const rows = await db
+    .selectDistinctOn([priceHistory.watchId], {
+      watchId: priceHistory.watchId,
+      price: priceHistory.price,
+      currency: priceHistory.currency,
+      scrapedAt: priceHistory.scrapedAt,
+    })
+    .from(priceHistory)
+    .where(inArray(priceHistory.watchId, watchIds))
+    .orderBy(priceHistory.watchId, desc(priceHistory.scrapedAt));
+
+  return new Map(
+    rows.map((row) => [
+      row.watchId,
+      {
+        price: Number(row.price),
+        currency: row.currency,
+        scrapedAt: row.scrapedAt,
+      },
+    ]),
+  );
+}
+
+function watchToEnqueueInput(row: Watch) {
+  return {
+    watchId: row.id,
+    userId: row.userId,
+    url: row.url,
+    canonicalUrl: row.canonicalUrl,
+    dedupeKey: row.dedupeKey,
+    site: row.site,
+    threshold: row.threshold === null ? null : Number(row.threshold),
+    currency: row.currency,
+  };
 }
 
 export async function createWatchAndMaybeEnqueue(input: {
@@ -122,25 +224,19 @@ export async function createWatchAndMaybeEnqueue(input: {
     created = true;
   }
 
+  const latest = created
+    ? null
+    : (await latestPricesByWatchIds(db, [watchRow.id])).get(watchRow.id) ?? null;
+
   const enqueue = await tryEnqueueWatchScrape({
     redis,
     rabbit,
-    watch: {
-      watchId: watchRow.id,
-      userId: user.id,
-      url: watchRow.url,
-      canonicalUrl: watchRow.canonicalUrl,
-      dedupeKey: watchRow.dedupeKey,
-      site: watchRow.site,
-      threshold:
-        watchRow.threshold === null ? null : Number(watchRow.threshold),
-      currency: watchRow.currency,
-    },
+    watch: watchToEnqueueInput(watchRow),
   });
 
   if (!enqueue.scrapeQueued) {
     return {
-      watch: toDto(watchRow),
+      watch: toDto(watchRow, latest),
       created,
       scrapeQueued: false,
       dedupeTtlSeconds: enqueue.dedupeTtlSeconds,
@@ -148,8 +244,47 @@ export async function createWatchAndMaybeEnqueue(input: {
   }
 
   return {
-    watch: toDto(watchRow),
+    watch: toDto(watchRow, latest),
     created,
+    scrapeQueued: true,
+    jobId: enqueue.jobId,
+  };
+}
+
+/**
+ * Enqueue a scrape for an existing watch (dedicated recheck).
+ * Returns `null` when the watch id does not exist. Does not mutate the watch.
+ */
+export async function recheckWatchById(input: {
+  db: Database;
+  redis: PricefluxRedis;
+  rabbit: RabbitConnection;
+  id: string;
+}): Promise<RecheckWatchResult | null> {
+  const { db, redis, rabbit, id } = input;
+  const rows = await db.select().from(watches).where(eq(watches.id, id)).limit(1);
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  const latest = (await latestPricesByWatchIds(db, [row.id])).get(row.id) ?? null;
+  const enqueue = await tryEnqueueWatchScrape({
+    redis,
+    rabbit,
+    watch: watchToEnqueueInput(row),
+  });
+
+  if (!enqueue.scrapeQueued) {
+    return {
+      watch: toDto(row, latest),
+      scrapeQueued: false,
+      dedupeTtlSeconds: enqueue.dedupeTtlSeconds,
+    };
+  }
+
+  return {
+    watch: toDto(row, latest),
     scrapeQueued: true,
     jobId: enqueue.jobId,
   };
@@ -169,7 +304,11 @@ export async function listWatchesForEmail(
     return [];
   }
   const rows = await db.select().from(watches).where(eq(watches.userId, user.id));
-  return rows.map(toDto);
+  const latestByWatch = await latestPricesByWatchIds(
+    db,
+    rows.map((row) => row.id),
+  );
+  return rows.map((row) => toDto(row, latestByWatch.get(row.id) ?? null));
 }
 
 export async function getWatchById(
@@ -178,7 +317,28 @@ export async function getWatchById(
 ): Promise<WatchDto | null> {
   const rows = await db.select().from(watches).where(eq(watches.id, id)).limit(1);
   const row = rows[0];
-  return row ? toDto(row) : null;
+  if (!row) {
+    return null;
+  }
+  const latest = (await latestPricesByWatchIds(db, [row.id])).get(row.id) ?? null;
+  return toDto(row, latest);
+}
+
+/**
+ * Price history for a watch, newest first. Caller validates the watch exists.
+ */
+export async function listPriceHistoryForWatch(
+  db: Database,
+  watchId: string,
+  limit: number,
+): Promise<PriceHistoryDto[]> {
+  const rows = await db
+    .select()
+    .from(priceHistory)
+    .where(eq(priceHistory.watchId, watchId))
+    .orderBy(desc(priceHistory.scrapedAt))
+    .limit(limit);
+  return rows.map(toHistoryDto);
 }
 
 export async function updateWatchById(
@@ -205,7 +365,11 @@ export async function updateWatchById(
 
   const rows = await db.update(watches).set(patch).where(eq(watches.id, id)).returning();
   const row = rows[0];
-  return row ? toDto(row) : null;
+  if (!row) {
+    return null;
+  }
+  const latest = (await latestPricesByWatchIds(db, [row.id])).get(row.id) ?? null;
+  return toDto(row, latest);
 }
 
 export async function deactivateWatchById(
